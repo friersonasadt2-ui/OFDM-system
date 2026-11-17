@@ -1,0 +1,4 @@
+SNR_dB,TimingMSE,ExactProbability,CPSafeProbability
+0,677.15,0.88,0.88
+10,0,1,1
+20,0,1,1
