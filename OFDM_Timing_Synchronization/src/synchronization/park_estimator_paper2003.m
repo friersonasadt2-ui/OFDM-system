@@ -25,12 +25,15 @@ rx = rx(:);
 [~,~,M,centers] = park_metric_paper2003(rx,N);
 
 % 2. Prespecified coarse timing search
-% Diagnostic range established in previous tests
-searchMin = arrivalRange(1)+L+1;
-searchMax = arrivalRange(2)+N+1;
+% Expected first structural peak relative to arrival delay
+peakOffset = cfg.Ncp + 1 + cfg.Nfft/2;
 
+searchMin = arrivalRange(1) + peakOffset;
+searchMax = arrivalRange(2) + peakOffset;
+
+% Identify candidate centers within the prespecified range
 searchValid = ...
-    centers>=searchMin & centers<=searchMax;
+    centers >= searchMin & centers <= searchMax;
 
 % 3. Energy validity checking
 energyValid = false(size(centers));
@@ -42,10 +45,10 @@ for i = 1:numel(centers)
     end
 
     d = centers(i);
-    k = (0:L).';
+    k = (1:L).';
 
     left = rx(d-k);
-    right = rx(d+k);
+    right = rx(d+k-1);
 
     EL = sum(abs(left).^2);
     ER = sum(abs(right).^2);
@@ -56,7 +59,11 @@ for i = 1:numel(centers)
 end
 
 % 4. Combine validity conditions
-validCandidates = searchValid & energyValid;
+% 4. Combine validity conditions
+metricValid = isfinite(M) & (M > 0);
+
+validCandidates = ...
+    searchValid & energyValid & metricValid;
 
 estimatedStart = NaN;
 peakCenter = NaN;
@@ -75,8 +82,9 @@ candidateMetrics = M(validCandidates);
 
 peakCenter = candidateCenters(idx);
 
-% 6. Provisional timing-index conversion
-estimatedStart = peakCenter-cfg.Ncp;
+% 6. Timing-index conversion
+% Validated for the expected first structural peak
+estimatedStart = peakCenter - cfg.Nfft/2;
 
 isValid = true;
 end
