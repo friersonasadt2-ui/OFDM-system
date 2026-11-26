@@ -1,0 +1,58 @@
+\chapter{Introduction}
+\label{chap:introduction}
+
+\section{Research Background}
+Orthogonal frequency-division multiplexing (OFDM) divides a broadband data stream among mutually orthogonal subcarriers. The inverse fast Fourier transform (IFFT) generates the time-domain signal at the transmitter, and the fast Fourier transform (FFT) recovers the subcarrier symbols at the receiver. With a sufficiently long cyclic prefix (CP) and appropriate receiver timing, a frequency-selective channel can be represented by a separate complex gain on each subcarrier, simplifying equalization \cite{vannee2000,morelli2007}.
+
+These advantages depend on synchronization. Before applying the FFT, the receiver must locate the useful portion of the received OFDM symbol. An incorrectly positioned FFT window can introduce a subcarrier-dependent phase rotation even when it remains within a region protected by the CP. When the window extends beyond this region, inter-symbol interference (ISI) and inter-carrier interference (ICI) may arise. The resulting degradation depends not only on the magnitude of the timing error but also on its direction, the channel impulse response, and the receiver's compensation strategy.
+
+Preamble-based timing synchronization exploits a training symbol transmitted before the data. The Schmidl--Cox (S\&C) method uses two repeated time-domain halves to form a correlation metric; the CP can produce a plateau that makes the exact symbol boundary ambiguous \cite{schmidl1997}. Park et al. proposed a training and correlation structure intended to produce a sharper timing peak \cite{park2003}. Minn et al. investigated training designs with a steeper timing-metric roll-off \cite{minn2003}. Constant-amplitude zero-autocorrelation (CAZAC) sequences offer another approach through their favorable correlation properties \cite{fang2012}. These studies motivate a comparison of timing estimators that use different training structures and decision rules.
+
+The timing metric alone does not characterize the statistical reliability of an estimator. A narrow peak in one received frame does not establish a high probability of correct timing across repeated noisy observations. Likewise, a low exact-timing probability need not imply that most FFT windows are outside the CP-safe region. A comparison based on repeated trials is therefore needed to distinguish systematic estimation bias, random variation, and occasional large errors. The effect of these errors on the complete OFDM receiver must also be examined separately.
+
+\section{Problem Statement}
+\label{sec:problem-statement}
+The central research problem, as defined in the project proposal, is how different preamble-based digital signal processing (DSP) timing synchronization algorithms for an OFDM receiver compare in timing accuracy and end-to-end detection performance under noise and multipath channels.
+
+This problem has two related levels. At the estimator level, the receiver must select a timing position from a set of candidate positions in the presence of additive white Gaussian noise (AWGN) and channel dispersion. The mean squared error (MSE) measures the average squared displacement from the reference position, but it does not distinguish a persistent small bias from a small number of large errors. Correct timing-estimation probability complements MSE by measuring the frequency with which a specified timing criterion is satisfied. In this study, exact timing and CP-safe timing are reported separately to distinguish precise boundary identification from operationally acceptable window placement.
+
+At the system level, the estimated timing position determines the FFT window used for data recovery. Even a CP-safe estimate may cause a deterministic phase rotation across subcarriers, leading to detection errors if the rotation is not compensated. Accordingly, timing accuracy and bit error rate (BER) are related but are not interchangeable measures of receiver performance. This study uses timing MSE and correct estimation probability as the principal measures, with BER as a supplementary end-to-end measure.
+
+\section{Research Questions and Objectives}
+\subsection{Research Questions}
+The four research questions follow the approved project proposal:
+\begin{enumerate}
+\item[\textbf{RQ1.}] How does timing offset affect the received OFDM signal and BER when synchronization is absent or inaccurate?
+\item[\textbf{RQ2.}] How do the Schmidl--Cox, Park, Minn and CAZAC-based timing synchronization methods differ in timing-metric behavior, timing-estimation MSE and correct estimation probability?
+\item[\textbf{RQ3.}] How does synchronization performance change with SNR and representative impairments, including multipath/channel dispersion and, where feasible, carrier-frequency offset (CFO) and phase noise?
+\item[\textbf{RQ4.}] How do improvements in timing-estimation accuracy relate to end-to-end OFDM detection performance, as measured by BER?
+\end{enumerate}
+The completed experimental investigation addresses the core timing-synchronization questions under AWGN and a fixed multipath channel. CFO and phase noise were optional extensions in the proposal and are not evaluated in this study.
+
+\subsection{Research Objectives}
+The overall objective is to study and compare OFDM timing synchronization algorithms using a reproducible MATLAB simulation platform. The specific objectives are:
+\begin{enumerate}
+\item To construct and verify a complex-baseband OFDM transmitter and receiver, including modulation, subcarrier mapping, IFFT/FFT processing, CP insertion and removal, channel transmission, and symbol detection.
+\item To model controlled positive and negative timing offsets and examine their effects on demodulation and detection.
+\item To implement and compare four representative preamble-based methods: Schmidl--Cox, Park-type, Minn-type, and CAZAC-based synchronization.
+\item To evaluate timing MSE and correct estimation probability across SNR and channel conditions, supported by empirical timing-error distributions.
+\item To evaluate BER as a supplementary system-level measure and discuss robustness and approximate computational complexity.
+\item To investigate tolerance to representative multipath dispersion and identify the limitations of the completed experiments, including the optional CFO and phase-noise extensions not undertaken.
+\end{enumerate}
+
+\section{Scope of the Study}
+The investigation is restricted to simulated complex-baseband OFDM with quadrature phase-shift keying (QPSK), 64 subcarriers, and a CP of 16 samples. The formal comparative experiments use one CP-inclusive training symbol and one data symbol per frame, each of length 80 samples and normalized to the same energy. Integer-sample arrival delays are considered. The channel conditions comprise AWGN and a deterministic three-tap multipath channel with AWGN added after convolution; the latter is not an ensemble of random fading channels.
+
+The four estimators are representative implementations rather than a claim of exact reproduction of every published algorithm. The Park-type implementation uses the training and metric confirmed by the project supervisor, the Minn-type method uses a time-domain Golay-based training structure, and the CAZAC-based method uses a known Zadoff--Chu preamble with normalized matched correlation. The methods share training duration, energy, timing reference, and candidate search interval in the formal comparison, but their receiver-side knowledge and decision rules differ. In particular, the CAZAC-based estimator uses the complete known training template. These distinctions limit the interpretation of comparative performance.
+
+The end-to-end BER experiment compares perfect timing, estimated timing, and estimated timing with oracle phase compensation. The physical channel response is assumed known for equalization. The oracle additionally uses the true timing error and is a diagnostic reference rather than a practical estimation or compensation method. Fractional-sample timing offsets, CFO, phase noise, random fading profiles, and practical channel estimation are outside the completed experimental scope.
+
+\section{Research Contributions}
+The contribution is a controlled, reproducible, quantitatively supported comparison rather than a new state-of-the-art synchronization algorithm. The study establishes a modular OFDM simulation framework and verifies its baseline behavior before introducing timing offsets and synchronization estimators. This progressive design separates basic transmitter and receiver validation from the effects of timing estimation.
+
+A unified Monte Carlo experiment compares the four selected implementations using common arrival-delay scenarios, data symbols, underlying noise realizations, and channel models. Each algorithm is evaluated at 11 SNR values under two channel conditions, with 10,000 trials per condition. Reporting exact timing probability, CP-safe timing probability, and timing MSE separately provides a basis for interpreting differences in estimation bias and error magnitude.
+
+The study further connects estimator-level performance with system-level detection by placing the FFT window according to the estimated timing position. The comparison with perfect timing and oracle phase compensation helps distinguish degradation attributable to residual phase rotation from degradation that remains when the FFT window is outside the safe region. This links the statistical properties of timing estimators to the practical consequences of their errors under the specified receiver assumptions.
+
+\section{Thesis Organization}
+Chapter~2 reviews the literature and introduces the theoretical background of OFDM, timing offsets, and preamble-based synchronization. Chapter~3 describes the simulation framework, actual estimator implementations, channel assumptions, Monte Carlo design, evaluation metrics, and receiver configurations. Chapter~4 presents baseline verification, timing-offset sensitivity, individual estimator validation, and the unified statistical comparison of timing performance. Chapter~5 examines end-to-end BER, the relationship between timing errors and detection performance, approximate computational complexity, and the limitations of the comparison. Chapter~6 summarizes the findings and identifies directions for future work.

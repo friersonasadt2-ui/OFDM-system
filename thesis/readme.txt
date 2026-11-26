@@ -1,0 +1,1 @@
+The tex named "UICthesis-example" will call tex files in the folder ¡°chapter¡±. So you just need to compile "UICthesis-example" to generate your thesis. Compiling a single tex file in the fold "chapter" might give error. If you do not wish to have a preface nor an acknowledgement in your thesis, just delete the tex file named "preface" nor "acknowledgement".

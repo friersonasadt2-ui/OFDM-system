@@ -1,0 +1,187 @@
+\chapter{Conclusion and Future Work}
+\label{chap:conclusion}
+
+\section{Summary of the Study}
+
+This study investigated how representative preamble-based timing
+synchronization methods affect timing-estimation accuracy and end-to-end
+OFDM detection. A modular MATLAB simulation framework was developed
+and verified progressively through eight experiments. Baseline verification
+and controlled timing displacements established the behavior of the OFDM
+link before the four timing estimators were compared. Individual
+estimator checks preceded the unified timing experiment (EXP07) and the
+end-to-end BER experiment (EXP08).
+
+The formal comparison used a 64-subcarrier QPSK--OFDM system with a
+16-sample cyclic prefix, equal CP-inclusive training duration and energy,
+and a common useful-symbol timing reference and decision interval.
+Each unified experiment contained 10,000 trials for each combination of
+four methods, two channel conditions and eleven SNR levels, giving
+880,000 timing-estimation attempts per experiment. EXP08 additionally
+evaluated three receiver configurations, giving 2,640,000 receiver
+observations. The shared trial scenarios supported controlled comparisons,
+while EXP07 and EXP08 used distinct random seeds. Timing MSE and
+correct-estimation probabilities were the primary evaluation measures;
+BER provided complementary receiver-level evidence.
+
+\section[Research Questions]{Answers to the Research Questions}
+
+\subsection*{RQ1: Effects of timing offset}
+
+The baseline BER agreed closely with the theoretical coherent QPSK
+reference in AWGN. The controlled-offset experiments demonstrated that
+accurate FFT-window placement is essential, but that the effects of timing
+offset depend on the channel and receiver processing. For a causal channel
+with maximum delay $\nu$ and cyclic-prefix length $G$, the sufficient
+CP-safe interval is $[\nu-G,0]$ under the adopted timing convention.
+Within this interval, an integer timing displacement preserves the circular
+convolution structure but produces a subcarrier-dependent phase rotation.
+Outside the interval, interference or loss of the intended samples may
+remain even after ideal phase correction. For example, EXP02 showed that
+a five-sample early displacement was almost perfectly correctable in the
+noiseless symbol-domain experiment, whereas a five-sample late displacement
+retained nonzero distortion. Thus, CP protection and correct detection
+are distinct properties.
+
+\subsection*{RQ2: Comparison of the four estimators}
+
+The unified timing results showed that metric shape, decision rule and
+error distribution jointly determine statistical performance. The selected
+Schmidl--Cox (S\&C) midpoint rule retained a systematic early bias associated
+with the plateau. At 20 dB AWGN, its exact probability was 0.0006,
+whereas its CP-safe probability was 0.9978. Its MSE was 59.4513 samples
+squared, approximately 97.36\% of which was attributable to squared
+bias. Low noise therefore improved safe-window placement without
+eliminating the bias relative to the useful-symbol boundary.
+
+The Park-type and Minn-type methods reduced plateau ambiguity and
+achieved much higher exact probabilities at moderate and high SNR.
+Nevertheless, occasional large errors could dominate their timing MSE.
+The CAZAC-based known-template estimator produced the strongest
+empirical timing results: all 110,000 AWGN estimates in EXP07 were
+exact, and only three of its 110,000 fixed-multipath estimates were
+nonexact, each by one sample. This result is conditional on the selected
+waveform, prior information and bounded search interval. The comparison
+concerns the implemented designs rather than every version of the
+published algorithms.
+
+\subsection*{RQ3: Sensitivity to noise and multipath}
+
+The influence of SNR was not uniform across the estimators. In EXP07,
+Park and Minn generally became more accurate as SNR increased, whereas
+the S\&C midpoint remained systematically early. The specified multipath
+profile was particularly challenging for peak-based estimation at low SNR.
+At 0 dB in multipath, Park had a higher exact probability than Minn
+(0.4856 versus 0.4653), but its MSE was much larger (322.0781 versus
+96.4519 samples squared) and its CP-safe probability was lower (0.5363
+versus 0.7605). The choice of performance criterion therefore changes the
+relative interpretation of these two designs.
+
+These findings describe AWGN and the particular deterministic three-tap
+channel used in the study. The optional investigations of carrier-frequency
+offset (CFO) and phase noise in the proposal were not undertaken.
+Consequently, the answer to RQ3 is restricted to the completed noise
+and multipath experiments.
+
+\subsection*{RQ4: Relationship between timing accuracy and BER}
+
+EXP08 demonstrated that the relationship depends critically on the receiver's
+treatment of residual timing error. At 20 dB AWGN, S\&C placed 99.81\%
+of its estimated windows within the CP-safe interval, yet its uncompensated
+BER was approximately 0.499553. Oracle phase compensation reduced the
+bit-error count from 639,428 to one out of 1,280,000 decoded bits. In
+fixed multipath at the same SNR, the safe-window fraction was 99.05\%,
+and the error count fell from 637,574 to 22 after compensation. In both
+conditions, all remaining oracle bit errors occurred in CP-unsafe frames.
+The paired frame-level analysis supported the substantial reduction without
+requiring independent bit decisions within a frame.
+
+Park, Minn and CAZAC generally approached their respective perfect-timing
+BER references as SNR increased. Their references in multipath were
+slightly different because the received active-frame power determined the
+noise scaling separately for each training design. The appropriate
+synchronization penalty is therefore interpreted relative to each method's
+own reference. The oracle uses the true timing error, and its performance
+quantifies the benefit of ideal phase information rather than that of a
+practical phase-estimation algorithm.
+
+\section{Contributions and Implications}
+
+The principal contribution is a controlled statistical comparison of four
+representative timing-synchronization implementations, supported by a
+verified OFDM framework and saved trial records.
+The separation of exact timing, CP-safe timing, MSE and estimator
+validity provides a more informative evaluation than a single success
+criterion. Error distributions and the bias--variance decomposition explain
+why persistent small displacements and rare large errors can lead to
+different conclusions even when aggregate probabilities appear favorable.
+The receiver comparison and paired BER analysis extend these findings to
+data detection. Zero observed errors are interpreted as finite-sample
+results, rather than as proof of zero underlying error probability.
+
+The study also highlights a trade-off between timing performance,
+receiver-side information and processing cost. Direct correlation at a
+single candidate requires 32 complex products for S\&C and Park, 48
+for Minn, and 80 for CAZAC under the implemented parameter settings.
+These counts describe core correlation workload rather than measured
+latency. CAZAC's favorable accuracy is accompanied by a longer correlation
+and use of the complete known template; S\&C's shorter correlation and
+high safe-window fraction may be useful when effective channel estimation
+or residual phase tracking is available. Park and Minn offer alternative
+peak-based designs whose relative merits depend on the channel and the
+chosen evaluation measure. No universally optimal estimator follows from
+this comparison.
+
+\section{Limitations and Future Work}
+
+The conclusions are restricted to integer-sample acquisition in a
+frame-present, simulated baseband link with known channel responses,
+a single fixed multipath profile, and a bounded search interval. No
+practical channel estimator, fractional timing recovery, noise-only
+packet detection or hardware implementation was evaluated. The Park-type,
+Minn-type and CAZAC-based implementations are representative variants,
+not strict reproductions of every cited publication. Equal training
+overhead does not ensure identical receiver-side information. These
+limitations motivate the following directions for future research.
+
+\begin{enumerate}
+\item \textbf{Broader channel and impairment models.}
+Extend the comparison to random fading channels, varying path strengths
+and delay spreads, fractional-sample delays, CFO and phase noise.
+Investigate both timing acquisition and subsequent tracking, including
+situations in which the CP is insufficient for the channel delay spread.
+
+\item \textbf{Practical receiver compensation.}
+Replace oracle information with pilot-assisted or training-based effective
+channel estimation and residual phase correction. Compare the resulting
+BER with the existing perfect and oracle references. Investigate whether
+plateau-edge refinement or a calibrated midpoint correction can improve
+S\&C without sacrificing its safe-window probability; validate any
+calibration on independent scenarios.
+
+\item \textbf{Acquisition and information fairness.}
+Include wider search intervals, noise-only frames and explicit packet
+detection thresholds to quantify missed detections and false alarms.
+Compare estimators given the same knowledge of the training waveform,
+and examine alternative training lengths and sequence designs.
+
+\item \textbf{Statistics and complexity.}
+Use frame-level paired confidence intervals and additional independent
+trials to characterize rare errors and uncertainty across channel
+realizations. Evaluate recursive correlation updates and FFT-based
+matched filtering, with measured execution time and memory use on a
+specified platform. Such experiments would complement the approximate
+operation counts reported in this thesis.
+\end{enumerate}
+
+These proposals have not been implemented.
+
+\section{Concluding Remarks}
+
+The central conclusion is that exact boundary acquisition, structurally
+safe FFT-window placement and reliable bit detection are related but
+distinct objectives. Under the tested conditions, the selected CAZAC
+design achieves the strongest timing accuracy, while the S\&C results
+show the importance of residual phase compensation. Timing statistics and
+BER should therefore be evaluated together, under explicit assumptions
+about the channel, prior information and receiver complexity.

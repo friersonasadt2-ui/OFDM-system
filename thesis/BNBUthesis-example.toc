@@ -1,0 +1,85 @@
+\contentsline {chapter}{\numberline {1}Introduction}{1}{}%
+\contentsline {section}{\numberline {1.1}Research Background}{1}{}%
+\contentsline {section}{\numberline {1.2}Problem Statement}{2}{}%
+\contentsline {section}{\numberline {1.3}Research Questions and Objectives}{3}{}%
+\contentsline {subsection}{\numberline {1.3.1}Research Questions}{3}{}%
+\contentsline {subsection}{\numberline {1.3.2}Research Objectives}{4}{}%
+\contentsline {section}{\numberline {1.4}Scope of the Study}{5}{}%
+\contentsline {section}{\numberline {1.5}Research Contributions}{6}{}%
+\contentsline {section}{\numberline {1.6}Thesis Organization}{7}{}%
+\contentsline {chapter}{\numberline {2}Literature Review and Theory}{8}{}%
+\contentsline {section}{\numberline {2.1}Fundamentals of OFDM}{8}{}%
+\contentsline {section}{\numberline {2.2}Cyclic Prefix and Channel Modeling}{10}{}%
+\contentsline {subsection}{\numberline {2.2.1}Cyclic prefix}{10}{}%
+\contentsline {subsection}{\numberline {2.2.2}Discrete-time channel}{10}{}%
+\contentsline {section}{\numberline {2.3}Effects of Symbol Timing Offset}{11}{}%
+\contentsline {subsection}{\numberline {2.3.1}Derivation of the CP-safe interval}{11}{}%
+\contentsline {subsection}{\numberline {2.3.2}Phase rotation within the safe interval}{12}{}%
+\contentsline {subsection}{\numberline {2.3.3}Timing outside the safe interval}{13}{}%
+\contentsline {section}{\numberline {2.4}Preamble-Based Timing Synchronization}{14}{}%
+\contentsline {section}{\numberline {2.5}Schmidl--Cox Synchronization}{15}{}%
+\contentsline {section}{\numberline {2.6}Park Timing Synchronization}{16}{}%
+\contentsline {section}{\numberline {2.7}Minn Timing Synchronization}{17}{}%
+\contentsline {section}{\numberline {2.8}CAZAC-Based Synchronization}{18}{}%
+\contentsline {section}{\numberline {2.9}Statistical Evaluation of Timing Estimators}{20}{}%
+\contentsline {subsection}{\numberline {2.9.1}Bias, variance and mean squared error}{20}{}%
+\contentsline {subsection}{\numberline {2.9.2}Correct timing probabilities}{21}{}%
+\contentsline {subsection}{\numberline {2.9.3}System-level performance}{21}{}%
+\contentsline {section}{\numberline {2.10}Literature Summary and Research Motivation}{22}{}%
+\contentsline {chapter}{\numberline {3}Research Methodology}{23}{}%
+\contentsline {section}{\numberline {3.1}Overview of the Simulation Framework}{23}{}%
+\contentsline {section}{\numberline {3.2}OFDM System Configuration}{24}{}%
+\contentsline {subsection}{\numberline {3.2.1}Data modulation and frame structure}{24}{}%
+\contentsline {subsection}{\numberline {3.2.2}Common parameters}{26}{}%
+\contentsline {section}{\numberline {3.3}Channel and Timing Offset Models}{26}{}%
+\contentsline {subsection}{\numberline {3.3.1}Arrival delay and indexing}{26}{}%
+\contentsline {subsection}{\numberline {3.3.2}Channel responses}{28}{}%
+\contentsline {subsection}{\numberline {3.3.3}Noise and SNR definitions}{28}{}%
+\contentsline {section}{\numberline {3.4}Implementation of Timing Estimators}{29}{}%
+\contentsline {subsection}{\numberline {3.4.1}Schmidl--Cox implementation}{30}{}%
+\contentsline {subsection}{\numberline {3.4.2}Park-type implementation}{31}{}%
+\contentsline {subsection}{\numberline {3.4.3}Minn-type implementation}{33}{}%
+\contentsline {subsection}{\numberline {3.4.4}CAZAC-based implementation}{34}{}%
+\contentsline {section}{\numberline {3.5}Unified Experimental Design}{35}{}%
+\contentsline {section}{\numberline {3.6}Monte Carlo Simulation Procedure}{36}{}%
+\contentsline {section}{\numberline {3.7}Performance Evaluation Metrics}{37}{}%
+\contentsline {section}{\numberline {3.8}End-to-End BER Evaluation}{39}{}%
+\contentsline {section}{\numberline {3.9}Experimental Workflow and Reproducibility}{41}{}%
+\contentsline {chapter}{\numberline {4}Timing Results and Analysis}{43}{}%
+\contentsline {section}{\numberline {4.1}Baseline Verification}{43}{}%
+\contentsline {section}{\numberline {4.2}Controlled Timing Offsets}{45}{}%
+\contentsline {section}{\numberline {4.3}Individual Estimator Checks}{49}{}%
+\contentsline {section}{\numberline {4.4}Unified Timing Metrics}{50}{}%
+\contentsline {section}{\numberline {4.5}Unified Monte Carlo Results}{54}{}%
+\contentsline {subsection}{\numberline {4.5.1}Performance in AWGN}{54}{}%
+\contentsline {subsection}{\numberline {4.5.2}Performance in fixed multipath}{59}{}%
+\contentsline {section}{\numberline {4.6}Error Distributions and Bias}{60}{}%
+\contentsline {section}{\numberline {4.7}Statistical Interpretation}{63}{}%
+\contentsline {section}{\numberline {4.8}Chapter Summary}{64}{}%
+\contentsline {chapter}{\numberline {5}BER Performance and Discussion}{65}{}%
+\contentsline {section}{\numberline {5.1}EXP08 Evaluation}{65}{}%
+\contentsline {section}{\numberline {5.2}Perfect-Timing Reference}{66}{}%
+\contentsline {section}{\numberline {5.3}Estimated-Timing BER}{69}{}%
+\contentsline {subsection}{\numberline {5.3.1}Performance in AWGN}{69}{}%
+\contentsline {subsection}{\numberline {5.3.2}Performance in fixed multipath}{71}{}%
+\contentsline {section}{\numberline {5.4}Oracle Phase Compensation}{72}{}%
+\contentsline {section}{\numberline {5.5}CP-Safe Timing and BER}{75}{}%
+\contentsline {section}{\numberline {5.6}Paired Statistical Interpretation}{77}{}%
+\contentsline {section}{\numberline {5.7}Computational Complexity}{79}{}%
+\contentsline {section}{\numberline {5.8}Overall Discussion}{81}{}%
+\contentsline {subsection}{\numberline {5.8.1}Interpretation of the four designs}{81}{}%
+\contentsline {subsection}{\numberline {5.8.2}Limitations of the comparison}{82}{}%
+\contentsline {section}{\numberline {5.9}Chapter Summary}{83}{}%
+\contentsline {chapter}{\numberline {6}Conclusion and Future Work}{84}{}%
+\contentsline {section}{\numberline {6.1}Summary of the Study}{84}{}%
+\contentsline {section}{\numberline {6.2}Research Questions}{85}{}%
+\contentsline {section}{\numberline {6.3}Contributions and Implications}{88}{}%
+\contentsline {section}{\numberline {6.4}Limitations and Future Work}{89}{}%
+\contentsline {section}{\numberline {6.5}Concluding Remarks}{90}{}%
+\contentsline {chapter}{\numberline {A}Implementation and Reproducibility}{91}{}%
+\contentsline {section}{\numberline {A.1}Project organization}{91}{}%
+\contentsline {section}{\numberline {A.2}Execution and preservation of results}{93}{}%
+\contentsline {section}{\numberline {A.3}Trial Arrays and Verification}{94}{}%
+\contentsline {chapter}{\numberline {B}Supplementary Timing Results}{96}{}%
+\contentsline {chapter}{\numberline {C}Supplementary BER Results}{101}{}%
+\contentsline {chapter}{Bibliography}{106}{}%

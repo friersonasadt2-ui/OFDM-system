@@ -1,0 +1,31 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Signal-processing and evaluation framework. The perfect-timing and oracle reference receivers in EXP08 use additional information as described in Section~\ref {sec:method_receiver}.}}{24}{}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces CP-inclusive frame structure in the unified experiments. Numbers denote sample counts; the two symbols are separately normalized to equal energy.}}{26}{}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Useful training-symbol structures, before CP insertion. The symbol $A$ denotes an algorithm-specific sequence, not a common sequence across methods. In the Park-type design, $B$ is the reversed $A$.}}{30}{}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Monte Carlo experimental procedure for EXP07 and EXP08.}}{36}{}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces EXP01: baseline QPSK--OFDM BER in AWGN. The logarithmic plot omits simulated zero-error observations and shows the low-$E_b/N_0$ range.}}{44}{}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces EXP02: noiseless frequency-domain MSE with and without phase compensation.}}{46}{}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces EXP02: noiseless BER for imposed FFT-window displacements, using 128,000 data bits.}}{47}{}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces EXP02: BER under AWGN with imposed timing offsets. Observed zero BER values are displayed at $1/128000$ for logarithmic plotting only.}}{48}{}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces EXP03: noiseless S\&C plateau, with the CP start at 51 and useful-symbol start at 67.}}{50}{}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces EXP07: display-normalized timing metrics in the noiseless single-path case.}}{51}{}%
+\contentsline {figure}{\numberline {4.7}{\ignorespaces EXP07: representative display-normalized timing metrics at 10 dB AWGN.}}{52}{}%
+\contentsline {figure}{\numberline {4.8}{\ignorespaces EXP07: representative display-normalized timing metrics at 10 dB in fixed multipath.}}{53}{}%
+\contentsline {figure}{\numberline {4.9}{\ignorespaces EXP07: empirical timing MSE over the full SNR grid.}}{56}{}%
+\contentsline {figure}{\numberline {4.10}{\ignorespaces EXP07: empirical exact-timing probability over the full SNR grid.}}{57}{}%
+\contentsline {figure}{\numberline {4.11}{\ignorespaces EXP07: empirical CP-safe probability over the full SNR grid. The safe intervals are $[-16,0]$ and $[-14,0]$ for (a) and (b), respectively.}}{58}{}%
+\contentsline {figure}{\numberline {4.12}{\ignorespaces EXP07: S\&C timing-error distribution at 20 dB AWGN.}}{61}{}%
+\contentsline {figure}{\numberline {4.13}{\ignorespaces EXP07: Park-type timing-error distribution at 0 dB in fixed multipath.}}{61}{}%
+\contentsline {figure}{\numberline {4.14}{\ignorespaces EXP07: Minn-type timing-error distribution at 0 dB in fixed multipath.}}{62}{}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces EXP08: perfect-timing BER.}}{67}{}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces EXP08: estimated-timing BER.}}{70}{}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces EXP08: oracle-compensated BER.}}{73}{}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces EXP08: S\&C receiver comparison.}}{74}{}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }

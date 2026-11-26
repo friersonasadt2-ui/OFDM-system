@@ -1,0 +1,30 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {3.1}{\ignorespaces Simulation configuration for EXP07 and EXP08.}}{27}{}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Raw timing-index mappings in the unified estimator.}}{35}{}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces Receiver configurations in EXP08.}}{39}{}%
+\contentsline {table}{\numberline {3.4}{\ignorespaces Progressive experimental workflow.}}{41}{}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces Timing errors in the three representative EXP07 frames (samples).}}{51}{}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces EXP07 timing performance in AWGN at selected SNRs. MSE is in samples squared.}}{55}{}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces EXP07 timing performance in fixed multipath with AWGN at selected SNRs. MSE is in samples squared.}}{55}{}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces EXP07 bias--variance decomposition for selected conditions. Variance uses the denominator 10,000.}}{62}{}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {5.1}{\ignorespaces EXP08: bit-error counts in AWGN.}}{69}{}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces EXP08: bit-error counts in fixed multipath.}}{71}{}%
+\contentsline {table}{\numberline {5.3}{\ignorespaces EXP08: S\&C errors by timing category at 20 dB.}}{76}{}%
+\contentsline {table}{\numberline {5.4}{\ignorespaces EXP08: paired BER reductions.}}{78}{}%
+\contentsline {table}{\numberline {5.5}{\ignorespaces Direct correlation workload.}}{79}{}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {B.1}{\ignorespaces EXP07: AWGN, S\&C and Park.}}{97}{}%
+\contentsline {table}{\numberline {B.2}{\ignorespaces EXP07: AWGN, Minn and CAZAC.}}{98}{}%
+\contentsline {table}{\numberline {B.3}{\ignorespaces EXP07: Fixed multipath with AWGN, S\&C and Park.}}{99}{}%
+\contentsline {table}{\numberline {B.4}{\ignorespaces EXP07: Fixed multipath with AWGN, Minn and CAZAC.}}{100}{}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {C.1}{\ignorespaces EXP08: AWGN, S\&C and Park. Receiver columns are bit-error counts.}}{102}{}%
+\contentsline {table}{\numberline {C.2}{\ignorespaces EXP08: AWGN, Minn and CAZAC. Receiver columns are bit-error counts.}}{103}{}%
+\contentsline {table}{\numberline {C.3}{\ignorespaces EXP08: Fixed multipath with AWGN, S\&C and Park. Receiver columns are bit-error counts.}}{104}{}%
+\contentsline {table}{\numberline {C.4}{\ignorespaces EXP08: Fixed multipath with AWGN, Minn and CAZAC. Receiver columns are bit-error counts.}}{105}{}%

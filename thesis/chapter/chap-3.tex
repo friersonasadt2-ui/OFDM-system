@@ -1,0 +1,328 @@
+\chapter{Research Methodology}
+\label{chap:methodology}
+
+\section{Overview of the Simulation Framework}
+The research adopts a controlled Monte Carlo simulation of a discrete-time complex-baseband OFDM link in MATLAB. Rather than comparing synchronization algorithms implemented in different communication systems, the study uses a common transmitter, channel model, timing reference and evaluation procedure. The experimental framework is developed progressively: baseline verification, controlled timing-window displacement, individual estimator validation, unified timing comparison and end-to-end detection. This progression allows errors in the communication model to be distinguished from errors introduced by timing estimation.
+
+The implementation is divided into configuration, OFDM processing, channel processing, synchronization and experimental scripts. The configuration supplies common parameters, while the synchronization modules construct training symbols, evaluate correlation metrics and select timing positions. The formal comparison uses the unified estimator interface to return the estimated useful-symbol start, a peak metric value, a validity flag and diagnostic information. Figure~\ref{fig:method_framework} summarizes the signal-processing and evaluation paths.
+
+\begin{figure}[htbp]
+\centering
+\setlength{\fboxsep}{5pt}
+\begin{tabular}{c}
+\fbox{\parbox{0.82\linewidth}{\centering Random data $\rightarrow$ QPSK $\rightarrow$ IFFT $\rightarrow$ CP}}\\[2pt]
+$\downarrow$\\[2pt]
+\fbox{\parbox{0.82\linewidth}{\centering Algorithm-specific preamble + common data symbol}}\\[2pt]
+$\downarrow$\\[2pt]
+\fbox{\parbox{0.82\linewidth}{\centering Arrival delay $\rightarrow$ channel convolution $\rightarrow$ AWGN}}\\[2pt]
+$\downarrow$\\[2pt]
+\fbox{\parbox{0.82\linewidth}{\centering Timing metric and decision rule\\ S\&C / Park-type / Minn-type / CAZAC-based}}\\[2pt]
+$\downarrow$\\[2pt]
+\fbox{\parbox{0.82\linewidth}{\centering Estimated useful-symbol start\\ Timing error, MSE and success probabilities (EXP07)}}\\[2pt]
+$\downarrow$\\[2pt]
+\fbox{\parbox{0.82\linewidth}{\centering Data FFT window $\rightarrow$ FFT $\rightarrow$ equalization\\ $\rightarrow$ QPSK detection $\rightarrow$ BER (EXP08)}}
+\end{tabular}
+\caption{Signal-processing and evaluation framework. The perfect-timing and oracle reference receivers in EXP08 use additional information as described in Section~\ref{sec:method_receiver}.}
+\label{fig:method_framework}
+\end{figure}
+
+\section{OFDM System Configuration}
+\subsection{Data modulation and frame structure}
+The useful symbol contains $N=64$ samples, and the cyclic prefix contains $G=16$ samples. All 64 subcarriers carry QPSK data in a regular data symbol; no pilot, guard or null subcarriers are reserved. This simplification isolates timing effects and does not represent a particular wireless standard. Each data symbol carries 128 bits. In EXP08, pairs of bits are converted to integer indices using the left-most bit as the most significant bit, and the MATLAB PSK modulator and demodulator use a phase offset of $\pi/4$. EXP07 instead generates random QPSK constellation indices directly using unit-average-power 4-QAM. No bit decisions are required in EXP07. The distinct data-generation functions are retained as implemented.
+
+The native MATLAB IFFT convention in Eq.~\eqref{eq:ofdm_ifft} is used to generate data samples. A cyclic prefix is formed from the final $G$ samples. For EXP07 and EXP08, the resulting data symbol and each algorithm-specific training symbol are separately normalized. For an unnormalized CP-inclusive vector $\mathbf{v}$, the transmitted vector is
+\begin{equation}
+ \widetilde{\mathbf{v}}=\sqrt{\frac{N+G}{\sum_{m=1}^{N+G}|v_m|^2}}\,\mathbf{v}.
+ \label{eq:method_norm}
+\end{equation}
+This makes the energy of each 80-sample vector equal to 80 and its average sample power equal to one. The scale factor is real and positive; it does not change the ideal QPSK decision angles. The normalization applies to the complete CP-inclusive symbol, not just the useful samples. The formal frame comprises one training symbol followed by one data symbol, with 160 active transmitted samples and total energy 160. Figure~\ref{fig:method_frame} illustrates the layout.
+
+\begin{figure}[htbp]
+\centering
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{|c|c|c|c|}\hline
+\rule{0pt}{18pt}CP & \makebox[0.26\linewidth]{Training} & CP & \makebox[0.26\linewidth]{Data}\\ \hline
+16 & 64 & 16 & 64\\ \hline
+\end{tabular}
+\par\smallskip
+$\underbrace{\hspace{0.35\linewidth}}_{80\ \mathrm{samples}}\quad
+\underbrace{\hspace{0.35\linewidth}}_{80\ \mathrm{samples}}$
+\caption{CP-inclusive frame structure in the unified experiments. Numbers denote sample counts; the two symbols are separately normalized to equal energy.}
+\label{fig:method_frame}
+\end{figure}
+
+\subsection{Common parameters}
+Table~\ref{tab:method_config} summarizes the settings used in the two formal unified experiments. The early baseline and individual-estimator experiments have their own settings; in particular, the earlier $E_b/N_0$ convention and search conditions must not be confused with the unified experiments.
+
+\begin{table}[htbp]
+\centering
+\caption{Simulation configuration for EXP07 and EXP08.}
+\label{tab:method_config}
+\small
+\begin{tabular}{p{0.53\linewidth}p{0.34\linewidth}}
+\hline
+Parameter & Value \\ \hline
+FFT size $N$ & 64\\
+CP length $G$ & 16 samples\\
+Data modulation & QPSK\\
+Data subcarriers & 64\\
+Bits per data symbol & 128\\
+Training symbols per frame & 1\\
+Data symbols per frame & 1\\
+CP-inclusive symbol length & 80 samples\\
+Energy per transmitted symbol & 80\\
+Active frame length & 160 samples\\
+Receive buffer length & 306 samples\\
+Arrival delay $D$ & Uniform integers 20--80\\
+Common useful-start search & 21--113 (inclusive)\\
+Number of common candidates & 93\\
+Channel models & AWGN; fixed three-path\\
+Received active-frame SNR & 0:2:20 dB\\
+Trials per condition & 10,000\\
+S\&C relative threshold & 0.90\\
+Park energy gate (each half) & 8\\
+Zadoff--Chu root & 1\\
+EXP07 random seed & 2045\\
+EXP08 random seed & 2049\\ \hline
+\end{tabular}
+\end{table}
+
+\section{Channel and Timing Offset Models}
+\subsection{Arrival delay and indexing}
+The transmitted frame is embedded in a zero-filled buffer. The arrival delay $D$ is drawn uniformly from the integers 20 through 80 for every trial of the formal comparison. In the MATLAB one-based indexing convention, the first CP sample is at $D+1$, the true useful training start is
+\begin{equation}
+ d_0=D+G+1,
+\end{equation}
+and the true useful data start is $d_{0,\mathrm{data}}=d_0+N+G$. Thus the true training reference ranges from 37 to 97. The receiver uses the fixed candidate interval $\mathcal{D}=\{21,22,\ldots,113\}$ in useful-start coordinates. It is not supplied with the realized value of $D$. The buffer length is calculated as $80+2(N+G)+N+2=306$, allowing the complete transmitted frame, the channel tail and the candidate receiver windows to be represented. Delays are implemented by placement in a buffer rather than by circularly shifting a signal.
+
+\subsection{Channel responses}
+The single-path condition uses $h[0]=1$. The fixed multipath condition uses the causal three-tap response
+\begin{equation}
+ \mathbf{h}=\frac{[1,\,0.5,\,0.25]^{\mathsf T}}
+ {\sqrt{1+0.5^2+0.25^2}}.
+ \label{eq:method_channel}
+\end{equation}
+The taps occur at delays zero, one and two samples. The squared tap magnitudes sum to one; this does not imply identical received power for every transmitted waveform. The buffered frame is linearly convolved with the channel, and the first 306 samples are retained before noise is added. The channel remains deterministic throughout the multipath experiment. Consequently, the resulting performance describes this specified channel profile, not an average over random fading or arbitrary delay spreads.
+
+\subsection{Noise and SNR definitions}
+For each algorithm and channel realization, let $r_0[m]$ denote the clean received buffer. The received active-frame power is
+\begin{equation}
+ P_{\mathrm{act}}=\frac{1}{160}\sum_{m=D+1}^{D+160}|r_0[m]|^2.
+\end{equation}
+The active interval excludes leading zeros and does not include the channel tail beyond the transmitted frame duration. At target SNR $\gamma_{\mathrm{dB}}$, a common unit-variance complex Gaussian noise vector $z[m]$ is scaled according to
+\begin{align}
+ \sigma_w^2&=P_{\mathrm{act}}10^{-\gamma_{\mathrm{dB}}/10},\\
+ r[m]&=r_0[m]+\sqrt{\sigma_w^2}\,z[m],\\
+ z[m]&=(z_R[m]+jz_I[m])/\sqrt{2},
+\end{align}
+where the real Gaussian components are independent standard normal variables. The underlying noise vector is shared within a paired trial, but its scaling is calculated separately for each algorithm and channel. In AWGN, the active-frame power is one by construction. In the multipath channel, training structure and convolution can change the received power, so equal target SNR does not guarantee identical data-symbol noise variance. Comparisons of BER must therefore use the corresponding perfect-timing reference for each algorithm.
+
+EXP01 and the BER study in EXP02 use the effective useful-data-bit $E_b/N_0$ convention, excluding CP energy overhead. For QPSK on all subcarriers, the corresponding useful-sample SNR in decibels is $E_b/N_0\ \mathrm{(dB)}+10\log_{10}2$. The baseline theoretical reference is Eq.~\eqref{eq:qpsk_ber}. These earlier axes must not be interpreted as the received active-frame SNR used in EXP07 and EXP08.
+
+\section{Implementation of Timing Estimators}
+\label{sec:method_estimators}
+The following descriptions specify the representative implementations actually used in the unified experiments. Each useful training vector is extended by the same 16-sample CP and normalized using Eq.~\eqref{eq:method_norm}. Figure~\ref{fig:method_preambles} summarizes their structures. All sample indices in the estimator descriptions follow MATLAB one-based indexing, unless a mathematical sequence index is explicitly zero-based.
+
+\begin{figure}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{l|c|c|c|c|}
+\multicolumn{1}{c}{}&\multicolumn{4}{c}{64 useful samples}\\ \cline{2-5}
+S\&C & \multicolumn{2}{c|}{$A$} & \multicolumn{2}{c|}{$A$}\\ \cline{2-5}
+Park-type & $A$ & $B$ & $A^*$ & $B^*$\\ \cline{2-5}
+Minn-type & $-A$ & $A$ & $-A$ & $-A$\\ \cline{2-5}
+CAZAC & \multicolumn{4}{c|}{Zadoff--Chu sequence}\\ \cline{2-5}
+\end{tabular}
+\caption{Useful training-symbol structures, before CP insertion. The symbol $A$ denotes an algorithm-specific sequence, not a common sequence across methods. In the Park-type design, $B$ is the reversed $A$.}
+\label{fig:method_preambles}
+\end{figure}
+
+\subsection{Schmidl--Cox implementation}
+The S\&C training function generates 32 random QPSK symbols and maps them to the even mathematical subcarrier indices $k=0,2,\ldots,62$. In MATLAB this corresponds to positions 1, 3, up to 63. The remaining subcarriers are set to zero. The 64-point IFFT produces two identical halves of length $L=N/2=32$. This repeated structure is verified numerically by an assertion in the training function.
+
+For candidate $d$, the implemented metric is Eq.~\eqref{eq:sc_metric}, with
+\begin{align}
+ P_{\mathrm{SC}}(d)&=\sum_{m=0}^{L-1}r^*[d+m]r[d+m+L],\\
+ R_{\mathrm{SC}}(d)&=\sum_{m=0}^{L-1}|r[d+m+L]|^2.
+\end{align}
+If the energy term does not exceed $10^{-12}$, the metric is set to zero. Outside the common search range, or for invalid metric values, the unified interface sets the restricted metric to zero. Let $M_{\max}$ denote its positive maximum. The decision rule identifies the contiguous region containing the selected maximum for which the metric is at least $0.90M_{\max}$. If its endpoints are $d_l$ and $d_r$, the estimate is
+\begin{equation}
+ \hat d_{\mathrm{SC}}=\operatorname{round}\left(\frac{d_l+d_r}{2}\right).
+\end{equation}
+If there is no positive valid candidate, no timing estimate is returned. This particular midpoint rule is intentionally retained to investigate plateau-induced ambiguity; no empirical bias correction is applied. The returned index is interpreted as a useful-symbol start.
+
+\subsection{Park-type implementation}
+The final Park-type training and correlation design follows the version confirmed by the supervisor. It is a representative conjugate-symmetry implementation rather than an assertion of exact reproduction of the published Park algorithm. A length-16 vector of random unit-average-power 4-QAM symbols is transformed by a 16-point IFFT to form $A$. Let $B$ denote the reversal of $A$, so that the useful training vector is
+\begin{equation}
+ \mathbf{v}_{\mathrm{Park}}=[A^{\mathsf T},B^{\mathsf T},
+ (A^*)^{\mathsf T},(B^*)^{\mathsf T}]^{\mathsf T}.
+\end{equation}
+Here conjugation is elementwise. At the correct internal boundary, the 32 samples to its left in reversed order are the complex conjugates of those to its right.
+
+Let $c$ denote the boundary between received samples $c-1$ and $c$. The implemented correlation and normalization are
+\begin{align}
+ P_{\mathrm{P}}(c)&=\left|\sum_{k=1}^{32}r[c-k]r[c+k-1]\right|,\\
+ M_{\mathrm{P}}(c)&=\frac{P_{\mathrm{P}}(c)^2}
+ {\max_{j\in\mathcal{C}_{\mathrm{full}}}P_{\mathrm{P}}(j)^2},
+\end{align}
+where $\mathcal{C}_{\mathrm{full}}$ is the set of all centers with a complete 64-sample window in the receive buffer. If the maximum power is zero, the metric is set to zero. The global normalization is not a local received-energy denominator. The right-half energy is also returned by the metric function for diagnostic purposes. The unified estimator additionally imposes the two-sided gate
+\begin{equation}
+ \sum_{k=1}^{32}|r[c-k]|^2\geq8,\qquad
+ \sum_{k=1}^{32}|r[c+k-1]|^2\geq8.
+\end{equation}
+The largest positive finite metric among the eligible centers is selected. Since the symmetry center lies 32 samples after the useful training start, the index conversion is
+\begin{equation}
+ \hat d_{\mathrm{P}}=\hat c-32.
+\end{equation}
+The normalization, gate and index conversion are properties of the final implementation. Earlier Park diagnostic variants are not used for the unified comparison.
+
+\subsection{Minn-type implementation}
+The selected Minn-type design uses a deterministic time-domain Golay sequence of length 16. Starting with $a_0=b_0=[1]$, the code recursively constructs
+\begin{equation}
+ a_{q+1}=[a_q;b_q],\qquad b_{q+1}=[a_q;-b_q],\quad q=0,1,2,3.
+\end{equation}
+One member $A=a_4$ is used to form the useful sequence $[-A;A;-A;-A]$. Define the four sign coefficients $p=(-1,1,-1,-1)$ and the adjacent correlation weights $b_i=p_i p_{i+1}$, giving $(-1,-1,1)$. For a candidate useful start $d$, the metric is calculated using four consecutive blocks of length $B=16$:
+\begin{align}
+ C_i(d)&=\sum_{m=0}^{15}r^*[d+(i-1)B+m]r[d+iB+m],\quad i=1,2,3,\\
+ P_{\mathrm{M}}(d)&=-C_1(d)-C_2(d)+C_3(d),\\
+ E_{\mathrm{M}}(d)&=\sum_{m=0}^{63}|r[d+m]|^2,\\
+ M_{\mathrm{M}}(d)&=\left(\frac{4|P_{\mathrm{M}}(d)|}{3E_{\mathrm{M}}(d)}\right)^2.
+\end{align}
+The metric is zero when $E_{\mathrm{M}}(d)\leq10^{-12}$. In ideal alignment, the sign weights make the three adjacent correlations add constructively; the factor $4/3$ normalizes the aligned metric to one. The estimator selects the largest positive finite metric within the common search interval. Its output is already expressed in useful-start coordinates. This deterministic signed-block implementation is the Minn-type representative considered in this study.
+
+\subsection{CAZAC-based implementation}
+The CAZAC training function generates the even-length Zadoff--Chu sequence in Eq.~\eqref{eq:zc_sequence}, with $N=64$ and root $u=1$. The sequence is generated directly in the time domain, followed by CP insertion and energy normalization. Since all sequence elements have unit magnitude, the CP-inclusive energy is already 80 in exact arithmetic. The receiver uses the complete known 80-sample training template $t[m]$.
+
+For a candidate CP start $q$, the metric is
+\begin{align}
+ P_{\mathrm{Z}}(q)&=\sum_{m=1}^{80}t^*[m]r[q+m-1],\\
+ E_{\mathrm{Z}}(q)&=\sum_{m=1}^{80}|r[q+m-1]|^2,\\
+ M_{\mathrm{Z}}(q)&=\frac{|P_{\mathrm{Z}}(q)|^2}{80E_{\mathrm{Z}}(q)}.
+\end{align}
+If the candidate energy does not exceed $10^{-12}$, the metric is set to zero. The template energy is calculated explicitly in the code. A peak is selected from the positive finite metrics in the mapped search range, and the CP-start index is converted according to $\hat d_{\mathrm{Z}}=\hat q+16$. This design uses a known waveform, whereas the other methods evaluate relationships between received blocks or halves. Equal training duration does not remove this difference in receiver information. The implementation is not a verified reproduction of the specific Fang et al. algorithm.
+
+\section{Unified Experimental Design}
+The unified interface maps each metric's raw index to the same useful-start reference before applying the common candidate interval. Table~\ref{tab:method_indices} summarizes the mappings. The shared search interval contains 93 possible useful-symbol starts; Park's energy gate may reduce the number of eligible candidates. The actual metric functions scan all complete windows in the receive buffer before the common-range restriction is applied. Thus equal candidate support refers to the decision interval rather than equal computational work. This distinction is retained in the subsequent complexity discussion.
+
+\begin{table}[htbp]
+\centering
+\caption{Raw timing-index mappings in the unified estimator.}
+\label{tab:method_indices}
+\small
+\begin{tabular}{llll}
+\hline
+Method & Raw index & Useful index & Raw range\\ \hline
+S\&C & $d$ & $d$ & 21--113\\
+Park-type & $c$ & $c-32$ & 53--145\\
+Minn-type & $d$ & $d$ & 21--113\\
+CAZAC & $q$ & $q+16$ & 5--97\\ \hline
+\end{tabular}
+\end{table}
+
+The comparison controls the transmitted energy, training overhead, data payload, arrival-delay distribution, noise construction, channel profiles and timing reference. The four algorithms are evaluated on the same underlying random trial scenarios. The S\&C and Park training symbols are regenerated randomly, while the Minn and CAZAC training symbols are deterministic. Consequently, the comparison evaluates the complete selected training-and-estimator designs, not the isolated effect of a metric under identical waveforms or identical receiver information. No true arrival-delay information is provided to the timing estimator beyond the fixed search interval.
+
+\section{Monte Carlo Simulation Procedure}
+EXP07 and EXP08 each use 11 SNR levels and 10,000 trials per level. Within every trial, the arrival delay, data symbol and underlying Gaussian noise vector are generated once and shared across the four algorithms and two channel conditions. The algorithm-specific training symbols are constructed, combined with the common data symbol, and processed independently through the two channel profiles. The noise scaling is determined from the corresponding clean received active-frame power. This paired experimental design reduces unrelated scenario variation across the methods, but the resulting algorithm observations within a trial are not independent replicates of one another.
+
+\begin{figure}[htbp]
+\centering
+\small
+\begin{tabular}{c}
+\fbox{\parbox{0.80\linewidth}{\centering Set experiment seed and SNR grid}}\\[2pt]
+$\downarrow$\\[2pt]
+\fbox{\parbox{0.80\linewidth}{\centering For each SNR: repeat 10,000 trials}}\\[2pt]
+$\downarrow$\\[2pt]
+\fbox{\parbox{0.80\linewidth}{\centering Generate shared delay, data and base noise}}\\[2pt]
+$\downarrow$\\[2pt]
+\fbox{\parbox{0.80\linewidth}{\centering For each of four training designs and two channels:\\ construct frame, convolve, scale noise}}\\[2pt]
+$\downarrow$\\[2pt]
+\fbox{\parbox{0.80\linewidth}{\centering Estimate timing; record validity and error\\ In EXP08, also evaluate three receiver cases}}\\[2pt]
+$\downarrow$\\[2pt]
+\fbox{\parbox{0.80\linewidth}{\centering Aggregate by SNR, channel and algorithm;\\ save trial arrays and summary tables}}
+\end{tabular}
+\caption{Monte Carlo experimental procedure for EXP07 and EXP08.}
+\label{fig:method_mc}
+\end{figure}
+
+For each of the $11\times2\times4=88$ combinations, 10,000 timing estimates are attempted. Each unified experiment therefore contains 880,000 timing-estimation trials across all conditions. EXP07 uses random seed 2045; EXP08 uses seed 2049 and generates its own trials. The results of EXP08 are not paired trial-by-trial with EXP07, even though the configuration is the same. Figure~\ref{fig:method_mc} summarizes the procedure.
+
+The experiment scripts save trial-level timing errors, validity indicators, peak metrics, arrival delays and received active-frame powers. EXP08 additionally records estimated starts, CP-safe indicators and receiver-specific bit errors and validity. This permits statistical summaries to be checked against the original simulated observations and supports subsequent error-distribution analysis without further simulation.
+
+\section{Performance Evaluation Metrics}
+The primary timing metrics follow the definitions developed in Chapter~\ref{chap:theory}. In the formal experiments, each valid estimate is compared against the true useful training start, $e_i=\hat d_i-d_{0,i}$. Negative values denote early estimates. An invalid estimate is represented by a missing numerical value and an explicit false validity flag.
+
+For $K_{\mathrm{all}}=10,000$ trials in each condition and valid index set $\mathcal{V}$, the implemented summaries are
+\begin{align}
+ \widehat{p}_{\mathrm{exact}}&=\frac{\#\{i\in\mathcal{V}:e_i=0\}}{K_{\mathrm{all}}},\\
+ \widehat{p}_{\mathrm{safe}}&=\frac{\#\{i\in\mathcal{V}:\nu-G\leq e_i\leq0\}}{K_{\mathrm{all}}},\\
+ \widehat{p}_{\mathrm{fail}}&=1-\frac{|\mathcal{V}|}{K_{\mathrm{all}}},\\
+ \widehat{\mathrm{MSE}}&=\frac{1}{|\mathcal{V}|}\sum_{i\in\mathcal{V}}e_i^2.
+\end{align}
+The final expression is undefined when no valid estimate is available. The exact and CP-safe probabilities use all attempted trials as their denominator, whereas MSE is conditional on valid estimates. In the observed formal results, all timing estimates are valid, so the conditional and ordinary empirical MSE coincide. Validity refers to the estimator returning an eligible timing position; it does not establish that the selected position is correct or that the detector would reject a noise-only frame.
+
+The CP-safe interval is $[-16,0]$ in AWGN and $[-14,0]$ in the specified multipath channel, according to Eq.~\eqref{eq:cp_safe}. The two probabilities therefore use channel-specific operational criteria. Mean signed timing error, maximum absolute error and empirical error distributions complement MSE; the decomposition in Section 2.9 separates systematic bias from random spread. Histograms and descriptive tables are derived from saved trial errors. At high SNR, zero observed errors or a success proportion of one is interpreted as a finite-sample result, not proof of zero underlying failure probability.
+
+\section{End-to-End BER Evaluation}
+\label{sec:method_receiver}
+EXP08 evaluates the consequences of timing estimates by using them to position the FFT window for a data symbol. Given a useful training start estimate $\hat d$, the estimated useful data start is
+\begin{equation}
+ \hat d_{\mathrm{data}}=\hat d+N+G=\hat d+80.
+\end{equation}
+Because the training estimate already refers to the useful-symbol start, no additional CP offset is added. The error of the data window equals the training timing error. The receiver extracts $N$ samples from the specified start, performs the FFT and divides the result elementwise by the supplied channel response. A QPSK demodulator converts the equalized symbols to 128 detected bits. The known physical frequency response is $H[k]=1$ in AWGN and the $N$-point DFT of the three-tap response in the multipath channel. No channel estimation is performed.
+
+Three receiver configurations are evaluated for every transmitted frame. Table~\ref{tab:method_receivers} specifies the timing and equalization information used by each.
+
+\begin{table}[htbp]
+\centering
+\caption{Receiver configurations in EXP08.}
+\label{tab:method_receivers}
+\small
+\begin{tabular}{p{0.25\linewidth}p{0.29\linewidth}p{0.34\linewidth}}
+\hline
+Receiver & Useful data start & Equalization response\\ \hline
+Perfect & $d_{0,\mathrm{data}}$ & $H[k]$\\
+Estimated & $\hat d_{\mathrm{data}}$ & $H[k]$\\
+Oracle & $\hat d_{\mathrm{data}}$ & $H[k]e^{j2\pi ke/N}$\\ \hline
+\end{tabular}
+\end{table}
+
+The perfect receiver provides an algorithm-specific reference for the selected channel and noise scaling. The estimated receiver uses the timing estimate without compensating the residual timing-induced phase rotation. The oracle uses the same estimated window but divides by the effective response in Eq.~\eqref{eq:effective_channel}, constructed using the true error $e$. It is a diagnostic experiment requiring information unavailable to a practical receiver. The ideal phase relationship is guaranteed only within the CP-safe interval under the model assumptions. Applying the same phase correction outside that interval does not in general eliminate interference or recover missing samples. When $e=0$, all three receivers operate on identical samples with identical channel responses, and the formal script asserts equality of the detected bits.
+
+For each receiver case, let $F_v$ and $F_f$ be the counts of valid and failed data frames, respectively, and $B_e$ the number of incorrectly detected bits among valid frames. With $b=128$, the statistics are
+\begin{align}
+ B_{\mathrm{offered}}&=b K_{\mathrm{all}},\\
+ B_{\mathrm{decoded}}&=b F_v,\qquad B_{\mathrm{lost}}=b F_f,\\
+ \widehat{\mathrm{BER}}_{\mathrm{cond}}&=B_e/B_{\mathrm{decoded}},\\
+ \widehat{p}_{\mathrm{frame\ fail}}&=F_f/K_{\mathrm{all}},\\
+ \widehat{p}_{\mathrm{delivery\ fail}}&=(B_e+B_{\mathrm{lost}})/B_{\mathrm{offered}}.
+\end{align}
+Conditional BER is undefined if no bits are decoded. Lost bits are not counted as ordinary bit errors; the delivery-failure measure explicitly combines the two categories. The experiment also records BER separately for valid frames with CP-safe and CP-unsafe estimated timing. Empty categories are undefined, rather than zero. The timing category is determined by the actual estimator even when the receiver being summarized uses perfect timing. Each receiver has 1,280,000 offered bits per algorithm/channel/SNR condition, giving 264 receiver-specific conditions in EXP08. The three receiver cases share the same frames, so their cumulative bit counts must not be treated as independent bit observations.
+
+\section{Experimental Workflow and Reproducibility}
+Table~\ref{tab:method_workflow} records the roles of the eight experiments. EXP03--06 validate individual implementations, while EXP07 supplies the primary four-method comparison. Because earlier experiments can use different arrival delays and candidate ranges, their statistics are not combined into the formal ranking. EXP08 uses actual estimated timing for data recovery and provides supplementary system-level evidence.
+
+\begin{table}[htbp]
+\centering
+\caption{Progressive experimental workflow.}
+\label{tab:method_workflow}
+\small
+\begin{tabular}{p{0.14\linewidth}p{0.72\linewidth}}
+\hline
+Experiment & Purpose\\ \hline
+EXP01 & Perfect-timing QPSK--OFDM baseline and theoretical BER check.\\
+EXP02 & Controlled early and late FFT-window displacement and phase-compensation diagnostics.\\
+EXP03 & S\&C metric, plateau verification and individual timing statistics.\\
+EXP04 & Final Park-type validation and timing statistics.\\
+EXP05 & Minn-type validation and timing statistics.\\
+EXP06 & CAZAC-based validation and timing statistics.\\
+EXP07 & Unified four-estimator timing metrics and Monte Carlo comparison.\\
+EXP08 & End-to-end BER with perfect, estimated and oracle receiver cases.\\ \hline
+\end{tabular}
+\end{table}
+
+The MATLAB implementation is retained in a frozen project archive. Configuration values are obtained from \texttt{default\_config.m}. The principal formal scripts are \texttt{exp07\_unified\_monte\_carlo.m} and \texttt{exp08\_ber\_monte\_carlo.m}. Their output includes MAT trial arrays and CSV summary tables in the data and tables subdirectories of the results directory. The representative metric plots are generated separately by \texttt{exp07\_timing\_metric\_comparison.m}. Figures used for interpretation are distinguished from the metric arrays used for the actual timing decisions.
+
+Assertions in the formal scripts verify symbol lengths, energy normalization, candidate support, valid index bounds, array dimensions and consistency of recorded statistics. The fixed seed, explicit configuration and saved trial-level outputs provide a basis for reproducibility. Legacy diagnostic scripts and results are retained for historical reference but are not substituted for the final estimator implementations. The subsequent results chapters use the frozen formal outputs; additional descriptive analysis and figure preparation do not change the underlying simulation observations.
+
+The methodology is restricted to integer-sample timing, an ideal complex-baseband model, a single deterministic multipath profile and the stated receiver assumptions. It is designed to answer the core timing-synchronization questions in the proposal, not to establish performance under all practical impairments. Chapter 4 evaluates the timing estimators, and Chapter 5 examines the consequences for BER and discusses computational requirements and limitations.

@@ -1,0 +1,472 @@
+% Replacement for the template's chap-appendix.tex.
+% No additional packages required.
+\appendix
+\chapter[Implementation and Reproducibility]{Implementation and Reproducibility}
+\label{app:reproducibility}
+
+This appendix identifies the source files and saved outputs supporting the
+experiments in Chapters 3--5. The frozen project archive is the reference
+version for this thesis. Supplementary numerical tables in Appendices B and C
+are extracted from its saved results, not from new simulation runs.
+
+\section{Project organization}
+The MATLAB project is organized into separate configuration, signal processing,
+synchronization, experiment and result directories. The principal files and
+directories are listed below. Paths are relative to the extracted project root.
+
+\begin{center}
+\begin{small}
+\begin{tabular}{ll}
+\hline
+Location & Purpose \\
+\hline
+\texttt{main.m} & Project initialization \\
+\texttt{config/} & Parameters and path management \\
+\texttt{src/ofdm/} & Modulation and receiver processing \\
+\texttt{src/channel/} & Delay, channel and noise functions \\
+\texttt{src/synchronization/} & Training, metrics and decisions \\
+\texttt{experiments/} & Validation and Monte Carlo scripts \\
+\texttt{results/data/} & MAT files and trial records \\
+\texttt{results/tables/} & CSV statistical summaries \\
+\texttt{results/figures/} & Original experiment plots \\
+\hline
+\end{tabular}
+\end{small}
+\end{center}
+
+The common configuration is defined in \verb|config/default_config.m| and
+project paths are managed by \verb|config/project_paths.m|. The initialization
+script \verb|main.m| adds the project directories to the MATLAB path; it is
+not a command to execute every experiment. The principal synchronization
+interface is \verb|timing_estimator_unified.m|, located in the synchronization
+source directory. It maps raw estimator positions to a common useful-start
+coordinate, applies the candidate range and returns validity information.
+
+The final training and metric pairs are:
+\begin{itemize}
+\item S\&C: \verb|schmidl_cox_training.m| and \verb|schmidl_cox_metric.m|.
+\item Park-type: \verb|park_training_original.m|; metric:
+\par\noindent\verb|park_metric_paper2003.m|.
+\item Minn-type: \verb|minn_training.m| and \verb|minn_metric.m|.
+\item CAZAC: \verb|cazac_training.m| and \verb|cazac_metric.m|.
+\end{itemize}
+The names of the Park files are historical identifiers; the implemented
+variant is the one specified in Chapter 3. Older diagnostic scripts retained
+in the archive should not be used in place of the final formal comparison.
+The function \verb|ofdm_receive_at_start.m| implements data recovery from a
+supplied useful-symbol start in EXP08.
+
+\section{Execution and preservation of results}
+The project uses MATLAB with the Communications Toolbox (including QAM and
+PSK modulation functions). To initialize a working copy, extract the archive,
+set the MATLAB current folder to the extracted project root, and execute:
+\begin{verbatim}
+main
+addpath(genpath(pwd));
+rehash;
+\end{verbatim}
+The baseline and controlled-offset checks are contained in EXP01 and EXP02;
+EXP03--06 provide the individual estimator checks. For the final unified
+comparison, the following entry points are the relevant scripts:
+\begin{verbatim}
+exp07_timing_metric_comparison
+exp07_unified_monte_carlo
+exp08_ber_monte_carlo
+\end{verbatim}
+The last two scripts use seeds 2045 and 2049, respectively, and obtain the
+SNR grid and trial count from the common configuration. They generate distinct
+Monte Carlo samples. These commands are provided for reproducibility, not as
+an instruction to overwrite the archived evidence. Any rerun should use a
+separate copy of the project because the scripts write result files. MATLAB
+release, toolbox versions and random-number implementation should be recorded
+when replicating the simulation. The reported tables use the existing saved
+outputs regardless of any later reruns.
+
+The principal result files, relative to the \texttt{results/} directory, are:
+\begin{itemize}
+\item \verb|data/exp07_unified_monte_carlo.mat|
+\item \verb|tables/exp07_unified_monte_carlo.csv|
+\item \verb|data/exp08_ber_monte_carlo.mat|
+\item \verb|tables/exp08_timing_statistics.csv|
+\item \verb|tables/exp08_ber_monte_carlo.csv|
+\end{itemize}
+The first experiment records 88 timing-summary rows; the second records 88
+timing-summary rows and 264 receiver-specific BER rows. The full CSV files
+also retain validity and other diagnostic fields not repeated in the printed
+supplementary tables.
+
+\section{Trial Arrays and Verification}
+In MATLAB, the timing arrays have dimensions $10000\times11\times2\times4$,
+ordered as trial, SNR, channel and algorithm. EXP08 receiver arrays append a
+fifth dimension of length three. The channel order is AWGN, fixed multipath;
+the algorithm order is S\&C, Park, Minn, CAZAC; and the receiver order is
+Perfect, Estimated, Oracle. Arrival delays are stored separately with
+trial and SNR dimensions. The two experiments must not be paired across
+seeds. The saved EXP08 MAT file uses the MATLAB v7.3 format; software that
+reads its HDF5 representation directly must account for the reversed dimension
+order relative to MATLAB.
+
+The following read-only MATLAB fragment checks S\&C at 20 dB AWGN.
+Cast EXP07 indices to double before subtraction, since some are unsigned.
+\begin{small}
+\begin{verbatim}
+A = load( ...
+    'results/data/exp07_unified_monte_carlo.mat');
+B = load( ...
+    'results/data/exp08_ber_monte_carlo.mat');
+s = 11; c = 1; a = 1;
+ref = double(A.allArrivalDelays(:,s)) + 17;
+e = double(A.estimatedStarts(:,s,c,a)) - ref;
+assert(isequal(e,double(A.allErrors(:,s,c,a))));
+assert(all(A.allValid(:,s,c,a)));
+exact = mean(e == 0);
+safe  = mean(e >= -16 & e <= 0);
+mse   = mean(e.^2);
+ref8 = double(B.allArrivalDelays(:,s)) + 17;
+e8 = double(B.allEstimatedStarts(:,s,c,a)) - ref8;
+assert(isequal(e8, ...
+    double(B.allTimingErrors(:,s,c,a))));
+assert(all(B.allTimingValid(:,s,c,a)));
+assert(all(B.allReceiverValid(:,s,c,a,:),'all'));
+counts = squeeze(sum(B.allBitErrors(:,s,c,a,:),1));
+ber = counts / (10000*128);
+\end{verbatim}
+\end{small}
+Expected EXP07 values: exact 0.0006, safe 0.9978 and MSE 59.4513.
+Expected EXP08 bit-error counts: 0, 639428 and 1. No new trial is generated.
+
+\chapter[Supplementary Timing Results]{Supplementary Timing Results}
+\label{app:timing}
+The following tables reproduce the principal EXP07 timing statistics over the
+complete SNR grid, using the frozen CSV and trial records. Each row represents
+10,000 attempted estimates. All estimates are valid in these data, so the
+failure probability is zero in every condition and is omitted from the tables.
+Exact and Safe are empirical probabilities, MSE is measured in samples squared,
+and Mean, SD and Max are in samples. Mean is the signed error, SD uses the
+population-form denominator 10,000, and Max is the maximum absolute error.
+Probabilities and MSE are displayed to four decimal places; this precision
+retains the resolution of these integer-error summaries. SD is rounded to
+four decimal places. Zero entries describe the observed trials only.
+
+\begin{table}[!p]
+\centering
+\caption{EXP07: AWGN, S\&C and Park.}
+\label{app:exp07-0-0}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lrrrrrrr}
+\hline
+Method & dB & Exact & Safe & MSE & Mean & SD & Max \\
+\hline
+S\&C & 0 & 0.0576 & 0.6773 & 135.9962 & -7.4264 & 8.9914 & 74 \\
+ & 2 & 0.0646 & 0.7600 & 115.1771 & -7.7405 & 7.4338 & 43 \\
+ & 4 & 0.0675 & 0.8216 & 103.9654 & -7.6272 & 6.7669 & 32 \\
+ & 6 & 0.0624 & 0.8655 & 96.0660 & -7.5908 & 6.2005 & 29 \\
+ & 8 & 0.0523 & 0.9179 & 87.3762 & -7.5142 & 5.5599 & 23 \\
+ & 10 & 0.0385 & 0.9501 & 81.6839 & -7.5717 & 4.9349 & 19 \\
+ & 12 & 0.0227 & 0.9715 & 73.8426 & -7.5214 & 4.1559 & 19 \\
+ & 14 & 0.0136 & 0.9857 & 67.1128 & -7.5368 & 3.2108 & 18 \\
+ & 16 & 0.0049 & 0.9931 & 62.9007 & -7.5721 & 2.3588 & 17 \\
+ & 18 & 0.0015 & 0.9965 & 60.3567 & -7.5949 & 1.6353 & 17 \\
+ & 20 & 0.0006 & 0.9978 & 59.4513 & -7.6081 & 1.2522 & 15 \\
+\hline
+Park & 0 & 0.8981 & 0.9132 & 100.1021 & 0.8549 & 9.9685 & 75 \\
+ & 2 & 0.9924 & 0.9939 & 6.5686 & 0.0026 & 2.5629 & 58 \\
+ & 4 & 0.9996 & 0.9997 & 0.3328 & -0.0112 & 0.5768 & 32 \\
+ & 6 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 8 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 10 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 12 & 0.9999 & 1.0000 & 0.0256 & -0.0016 & 0.1600 & 16 \\
+ & 14 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 16 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 18 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 20 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!p]
+\centering
+\caption{EXP07: AWGN, Minn and CAZAC.}
+\label{app:exp07-0-1}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lrrrrrrr}
+\hline
+Method & dB & Exact & Safe & MSE & Mean & SD & Max \\
+\hline
+Minn & 0 & 0.6438 & 0.7384 & 116.1906 & -3.1572 & 10.3064 & 63 \\
+ & 2 & 0.8222 & 0.8655 & 58.2892 & -1.7700 & 7.4267 & 49 \\
+ & 4 & 0.9276 & 0.9431 & 29.4977 & -0.9059 & 5.3551 & 34 \\
+ & 6 & 0.9773 & 0.9804 & 12.4727 & -0.3853 & 3.5106 & 32 \\
+ & 8 & 0.9949 & 0.9953 & 3.9948 & -0.1244 & 1.9948 & 32 \\
+ & 10 & 0.9989 & 0.9989 & 0.9218 & -0.0286 & 0.9597 & 32 \\
+ & 12 & 0.9998 & 0.9998 & 0.2048 & -0.0064 & 0.4525 & 32 \\
+ & 14 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 16 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 18 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 20 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+\hline
+CAZAC & 0 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 2 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 4 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 6 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 8 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 10 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 12 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 14 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 16 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 18 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 20 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!p]
+\centering
+\caption{EXP07: Fixed multipath with AWGN, S\&C and Park.}
+\label{app:exp07-1-0}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lrrrrrrr}
+\hline
+Method & dB & Exact & Safe & MSE & Mean & SD & Max \\
+\hline
+S\&C & 0 & 0.0561 & 0.5611 & 136.6196 & -6.9732 & 9.3805 & 74 \\
+ & 2 & 0.0635 & 0.6242 & 113.7913 & -7.3957 & 7.6873 & 63 \\
+ & 4 & 0.0641 & 0.6878 & 100.7103 & -7.3505 & 6.8323 & 29 \\
+ & 6 & 0.0621 & 0.7445 & 92.1388 & -7.2608 & 6.2785 & 31 \\
+ & 8 & 0.0509 & 0.8181 & 83.0025 & -7.1595 & 5.6342 & 27 \\
+ & 10 & 0.0393 & 0.8753 & 76.9561 & -7.2113 & 4.9953 & 20 \\
+ & 12 & 0.0267 & 0.9215 & 69.7334 & -7.1676 & 4.2847 & 20 \\
+ & 14 & 0.0142 & 0.9585 & 63.4962 & -7.2118 & 3.3891 & 18 \\
+ & 16 & 0.0074 & 0.9794 & 59.6080 & -7.2730 & 2.5907 & 17 \\
+ & 18 & 0.0029 & 0.9875 & 56.5460 & -7.2472 & 2.0060 & 17 \\
+ & 20 & 0.0013 & 0.9924 & 55.6819 & -7.2907 & 1.5898 & 16 \\
+\hline
+Park & 0 & 0.4856 & 0.5363 & 322.0781 & 4.9677 & 17.2453 & 75 \\
+ & 2 & 0.7200 & 0.7377 & 130.2631 & 2.4615 & 11.1447 & 76 \\
+ & 4 & 0.8466 & 0.8524 & 39.8540 & 0.8804 & 6.2513 & 72 \\
+ & 6 & 0.9302 & 0.9316 & 8.7257 & 0.2591 & 2.9425 & 64 \\
+ & 8 & 0.9723 & 0.9727 & 1.6678 & 0.0658 & 1.2898 & 50 \\
+ & 10 & 0.9902 & 0.9905 & 0.8639 & 0.0289 & 0.9290 & 51 \\
+ & 12 & 0.9964 & 0.9964 & 0.1430 & 0.0080 & 0.3781 & 36 \\
+ & 14 & 0.9990 & 0.9991 & 0.0178 & -0.0004 & 0.1334 & 13 \\
+ & 16 & 0.9998 & 0.9998 & 0.0002 & 0.0002 & 0.0141 & 1 \\
+ & 18 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 20 & 0.9999 & 0.9999 & 0.0361 & 0.0019 & 0.1900 & 19 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!p]
+\centering
+\caption{EXP07: Fixed multipath with AWGN, Minn and CAZAC.}
+\label{app:exp07-1-1}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lrrrrrrr}
+\hline
+Method & dB & Exact & Safe & MSE & Mean & SD & Max \\
+\hline
+Minn & 0 & 0.4653 & 0.7605 & 96.4519 & -2.9189 & 9.3772 & 71 \\
+ & 2 & 0.6300 & 0.8661 & 42.6963 & -1.5923 & 6.3373 & 37 \\
+ & 4 & 0.7864 & 0.9457 & 16.1942 & -0.7040 & 3.9621 & 34 \\
+ & 6 & 0.9121 & 0.9821 & 3.8823 & -0.2117 & 1.9589 & 34 \\
+ & 8 & 0.9752 & 0.9985 & 0.2696 & -0.0418 & 0.5175 & 32 \\
+ & 10 & 0.9955 & 0.9998 & 0.1140 & -0.0098 & 0.3375 & 32 \\
+ & 12 & 0.9996 & 1.0000 & 0.0007 & -0.0005 & 0.0265 & 2 \\
+ & 14 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 16 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 18 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 20 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+\hline
+CAZAC & 0 & 0.9998 & 0.9998 & 0.0002 & 0.0002 & 0.0141 & 1 \\
+ & 2 & 0.9999 & 0.9999 & 0.0001 & 0.0001 & 0.0100 & 1 \\
+ & 4 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 6 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 8 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 10 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 12 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 14 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 16 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 18 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+ & 20 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0.0000 & 0 \\
+\hline
+\end{tabular}
+\end{table}
+
+\clearpage
+\chapter[Supplementary BER Results]{Supplementary BER Results}
+\label{app:ber}
+EXP08 uses its own trial realizations. The timing columns below reproduce
+its 88 condition-level timing summaries (not EXP07 summaries). The three
+receiver columns report exact bit-error counts for 264 conditions
+across the three receiver configurations. Every row has 10,000 frames, with 128 bits decoded per frame
+for each receiver. All timing and receiver validity flags are true; there
+are no observed lost bits. Hence the BER for any receiver entry is its bit-error
+count divided by 1,280,000. Counts are printed rather than rounded BERs to
+preserve the distinction between zero errors and one or more rare errors.
+Mean is the mean signed timing error, and the MSE unit is samples squared.
+The Safe criterion is $[-16,0]$ in AWGN and $[-14,0]$ in fixed multipath.
+The complete CSV additionally contains conditional safe and unsafe BER,
+frame counts, and delivery-failure statistics. In that file an empty timing
+category has an undefined conditional BER (NaN), not an observed BER of zero.
+
+\begin{table}[!p]
+\centering
+\caption{EXP08: AWGN, S\&C and Park. Receiver columns are bit-error counts.}
+\label{app:exp08-0-0}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lrrrrrrrr}
+\hline
+Method & dB & Exact & Safe & MSE & Mean & Perfect & Est. & Oracle \\
+\hline
+S\&C & 0 & 0.0596 & 0.6782 & 138.8923 & -7.5843 & 203729 & 613859 & 215217 \\
+ & 2 & 0.0630 & 0.7629 & 114.7761 & -7.6691 & 132804 & 607946 & 140054 \\
+ & 4 & 0.0769 & 0.8136 & 103.7471 & -7.5979 & 72039 & 596189 & 76822 \\
+ & 6 & 0.0666 & 0.8713 & 94.4894 & -7.5368 & 29572 & 599171 & 31961 \\
+ & 8 & 0.0557 & 0.9116 & 87.4148 & -7.4580 & 7809 & 604545 & 8926 \\
+ & 10 & 0.0397 & 0.9480 & 80.4976 & -7.4730 & 1029 & 614662 & 1296 \\
+ & 12 & 0.0256 & 0.9714 & 73.1651 & -7.5171 & 35 & 623484 & 111 \\
+ & 14 & 0.0121 & 0.9881 & 67.6500 & -7.5772 & 0 & 632485 & 10 \\
+ & 16 & 0.0058 & 0.9930 & 62.8960 & -7.5834 & 0 & 635867 & 1 \\
+ & 18 & 0.0016 & 0.9968 & 60.6508 & -7.6108 & 0 & 638943 & 2 \\
+ & 20 & 0.0007 & 0.9981 & 59.1819 & -7.5889 & 0 & 639428 & 1 \\
+\hline
+Park & 0 & 0.8928 & 0.9112 & 99.5958 & 0.9416 & 203729 & 250434 & 219592 \\
+ & 2 & 0.9905 & 0.9913 & 10.1465 & 0.0305 & 132804 & 137606 & 134593 \\
+ & 4 & 0.9997 & 0.9999 & 0.1536 & -0.0064 & 72039 & 72215 & 72047 \\
+ & 6 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 29572 & 29572 & 29572 \\
+ & 8 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 7809 & 7809 & 7809 \\
+ & 10 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 1029 & 1029 & 1029 \\
+ & 12 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 35 & 35 & 35 \\
+ & 14 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+ & 16 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+ & 18 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+ & 20 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!p]
+\centering
+\caption{EXP08: AWGN, Minn and CAZAC. Receiver columns are bit-error counts.}
+\label{app:exp08-0-1}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lrrrrrrrr}
+\hline
+Method & dB & Exact & Safe & MSE & Mean & Perfect & Est. & Oracle \\
+\hline
+Minn & 0 & 0.6374 & 0.7323 & 119.2469 & -3.3163 & 203729 & 361958 & 221866 \\
+ & 2 & 0.8252 & 0.8662 & 58.1524 & -1.7792 & 132804 & 221580 & 143272 \\
+ & 4 & 0.9264 & 0.9406 & 30.3603 & -0.9335 & 72039 & 113931 & 77979 \\
+ & 6 & 0.9792 & 0.9814 & 11.2618 & -0.3462 & 29572 & 42262 & 31953 \\
+ & 8 & 0.9944 & 0.9944 & 4.8137 & -0.1495 & 7809 & 11322 & 8817 \\
+ & 10 & 0.9990 & 0.9990 & 0.8194 & -0.0254 & 1029 & 1657 & 1199 \\
+ & 12 & 0.9999 & 0.9999 & 0.1024 & -0.0032 & 35 & 101 & 49 \\
+ & 14 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+ & 16 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+ & 18 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+ & 20 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+\hline
+CAZAC & 0 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 203729 & 203729 & 203729 \\
+ & 2 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 132804 & 132804 & 132804 \\
+ & 4 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 72039 & 72039 & 72039 \\
+ & 6 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 29572 & 29572 & 29572 \\
+ & 8 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 7809 & 7809 & 7809 \\
+ & 10 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 1029 & 1029 & 1029 \\
+ & 12 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 35 & 35 & 35 \\
+ & 14 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+ & 16 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+ & 18 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+ & 20 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!p]
+\centering
+\caption{EXP08: Fixed multipath with AWGN, S\&C and Park. Receiver columns are bit-error counts.}
+\label{app:exp08-1-0}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lrrrrrrrr}
+\hline
+Method & dB & Exact & Safe & MSE & Mean & Perfect & Est. & Oracle \\
+\hline
+S\&C & 0 & 0.0545 & 0.5541 & 140.6267 & -7.0565 & 242235 & 611995 & 254184 \\
+ & 2 & 0.0611 & 0.6290 & 113.1076 & -7.3856 & 180634 & 606531 & 187614 \\
+ & 4 & 0.0690 & 0.6786 & 100.5101 & -7.2361 & 123717 & 599945 & 129007 \\
+ & 6 & 0.0653 & 0.7512 & 90.4880 & -7.1816 & 76465 & 601015 & 79463 \\
+ & 8 & 0.0581 & 0.8175 & 83.9060 & -7.1906 & 40410 & 605005 & 42470 \\
+ & 10 & 0.0492 & 0.8790 & 76.1288 & -7.1420 & 16293 & 610322 & 17375 \\
+ & 12 & 0.0299 & 0.9272 & 68.5817 & -7.1257 & 4669 & 621622 & 5238 \\
+ & 14 & 0.0168 & 0.9589 & 63.6219 & -7.2169 & 723 & 628842 & 848 \\
+ & 16 & 0.0078 & 0.9798 & 59.3102 & -7.2488 & 34 & 633532 & 86 \\
+ & 18 & 0.0026 & 0.9878 & 56.6490 & -7.2612 & 1 & 636776 & 47 \\
+ & 20 & 0.0019 & 0.9905 & 55.6396 & -7.2596 & 0 & 637574 & 22 \\
+\hline
+Park & 0 & 0.4937 & 0.5463 & 313.5398 & 4.9206 & 243741 & 435782 & 292434 \\
+ & 2 & 0.7059 & 0.7257 & 134.0624 & 2.4476 & 182063 & 308415 & 206347 \\
+ & 4 & 0.8518 & 0.8575 & 36.1499 & 0.7985 & 125044 & 196096 & 132946 \\
+ & 6 & 0.9282 & 0.9293 & 7.4731 & 0.2299 & 77468 & 116036 & 79643 \\
+ & 8 & 0.9719 & 0.9726 & 2.7340 & 0.0854 & 41162 & 57628 & 41969 \\
+ & 10 & 0.9890 & 0.9892 & 0.1758 & 0.0100 & 16777 & 23517 & 16874 \\
+ & 12 & 0.9974 & 0.9974 & 0.5511 & 0.0175 & 4874 & 6523 & 5016 \\
+ & 14 & 0.9990 & 0.9990 & 0.1261 & 0.0067 & 770 & 1414 & 807 \\
+ & 16 & 0.9999 & 0.9999 & 0.0001 & 0.0001 & 40 & 107 & 40 \\
+ & 18 & 0.9997 & 0.9997 & 0.0102 & 0.0012 & 1 & 187 & 1 \\
+ & 20 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!p]
+\centering
+\caption{EXP08: Fixed multipath with AWGN, Minn and CAZAC. Receiver columns are bit-error counts.}
+\label{app:exp08-1-1}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lrrrrrrrr}
+\hline
+Method & dB & Exact & Safe & MSE & Mean & Perfect & Est. & Oracle \\
+\hline
+Minn & 0 & 0.4533 & 0.7540 & 99.6561 & -3.0959 & 246211 & 444417 & 259461 \\
+ & 2 & 0.6273 & 0.8659 & 39.4301 & -1.4739 & 184432 & 342616 & 190812 \\
+ & 4 & 0.7959 & 0.9411 & 17.8623 & -0.7363 & 127062 & 227410 & 130136 \\
+ & 6 & 0.9124 & 0.9823 & 4.1382 & -0.2192 & 79155 & 126937 & 79949 \\
+ & 8 & 0.9726 & 0.9977 & 0.7909 & -0.0595 & 42320 & 58420 & 42481 \\
+ & 10 & 0.9958 & 0.9997 & 0.1131 & -0.0091 & 17511 & 20102 & 17548 \\
+ & 12 & 0.9998 & 1.0000 & 0.0002 & -0.0002 & 5149 & 5277 & 5149 \\
+ & 14 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 839 & 839 & 839 \\
+ & 16 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 45 & 45 & 45 \\
+ & 18 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 2 & 2 & 2 \\
+ & 20 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+\hline
+CAZAC & 0 & 0.9997 & 0.9997 & 0.0003 & 0.0003 & 249122 & 249240 & 249121 \\
+ & 2 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 187250 & 187250 & 187250 \\
+ & 4 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 129644 & 129644 & 129644 \\
+ & 6 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 81133 & 81133 & 81133 \\
+ & 8 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 43749 & 43749 & 43749 \\
+ & 10 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 18404 & 18404 & 18404 \\
+ & 12 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 5536 & 5536 & 5536 \\
+ & 14 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 938 & 938 & 938 \\
+ & 16 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 54 & 54 & 54 \\
+ & 18 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 2 & 2 & 2 \\
+ & 20 & 1.0000 & 1.0000 & 0.0000 & 0.0000 & 0 & 0 & 0 \\
+\hline
+\end{tabular}
+\end{table}
+
+\clearpage

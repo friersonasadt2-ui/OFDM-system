@@ -1,0 +1,121 @@
+ \documentclass[12pt,twoside]{report}
+
+% note that the document can be single or double sided.
+
+%\usepackage{uicthesis}
+\usepackage{uicthesis2}      % the style of 'uicthesis2' includes the list of tables and figues, choose it by yourself.
+\usepackage{graphicx,overpic}
+\usepackage{amsmath,amssymb}
+
+\newtheorem{theorem}{Theorem} [chapter]
+\newtheorem{lemma}{Lemma}[chapter]
+\newtheorem{coro}{Corollary}[chapter]
+\newtheorem{defi}{Definition}[chapter]
+\newtheorem{example}{Example}[chapter]
+\def\proof {\noindent{\bf Proof.}\quad}
+
+
+
+\newcommand{\ba}{\begin{array}}
+\newcommand{\ea}{\end{array}}
+\newcommand{\bt}{\begin{tabular}}
+\newcommand{\et}{\end{tabular}}
+\newcommand{\btb}{\begin{table}}
+\newcommand{\etb}{\end{table}}
+\newcommand{\bc}{\begin{center}}
+\newcommand{\ec}{\end{center}}
+\newcommand{\bea}{\begin{eqnarray}}
+\newcommand{\eea}{\end{eqnarray}}
+\newcommand{\Bea}{\begin{eqnarray*}}
+\newcommand{\Eea}{\end{eqnarray*}}
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeq}{\end{equation}}
+
+
+\def \bfm#1{\mbox{\boldmath$#1$}}
+%\def \bfm#1{\mathbf{#1}}
+
+\def \A {{\bfm A}} \def \a {{\bfm a}}  \def \b {{\bfm b}}
+\def \B {{\bfm B}} \def \c {{\bfm c}} \def \C {{\bfm C}}
+\def \d {{\bfm d}} \def \D {{\bfm D}} \def \e {{\bfm e}}
+\def \E {{\bfm E}}
+\def \f {{\bfm f}} \def \G {{\bfm G}} \def \g {{\bfm g}}
+\def \h {{\bfm h}} \def \H {{\bfm H}} \def \K {{\bfm K}}
+\def \I {{\bfm I}} \def \m {{\bfm m}} \def \M {{\bfm M}}
+\def \N {{\bfm N}} \def \o {{\bfm o}} \def \p {{\bfm p}}
+\def \P {{\bfm P}} \def \r {{\bfm r}} \def \R {{\bfm R}}
+\def \s {{\bfm s}} \def \S {{\bfm S}}
+\def \t {{\bfm t}} \def \u {{\bfm u}} \def \U {{\bfm U}}
+\def \w {{\bfm w}} \def \W {{\bfm W}} \def \v {{\bfm v}}
+
+\def \X {{\bfm X}} \def \x {{\bfm x}}
+\def \Y {{\bfm Y}} \def \y {{\bfm y}}
+\def \Z {{\bfm Z}} \def \z {{\bfm z}}
+\def \eps {\varepsilon} \def \Eps {\bfm \varepsilon}
+
+\def \th {{\bfm \theta}}
+\def \one {{\bf 1}}\def \zero {{\bf 0}}
+\def \Tau {{\bfm \tau}} \def \Alpha {{\bfm \alpha}}
+\def \Beta {{\bfm \beta}}
+\def \var {\mbox{Var}} \def \cov {\mbox{Cov}}
+\def \tr {\mbox{tr}}
+
+%\def \tX {{\tilde {\bfm X}}} \def \tx {{\tilde{\bfm x}}}
+\def \tX {\mbox{\textbf{X}}}
+
+
+\def \ca {{\mathcal A}}
+\def \cb {{\mathcal B}} \def \cd {{\mathcal D}}
+\def \cw {{\mathcal W}} \def \ck {{\mathcal K}}
+\def \cx {{\mathcal X}} \def \cm {{\mathcal M}} \def \cn {{\mathcal N}}
+\def \cl {{\mathcal L}} \def \cR {{\mathcal R}}
+\def \cu {{\mathcal U}} \def \ch {{\mathcal H}} \def \cp {{\mathcal P}}
+
+
+\begin{document}
+
+    \title{Timing Synchronization for Orthogonal
+    Frequency-Division Multiplexing Systems}
+
+    \author{Zhuoyang Zhou}
+    \studentid{2330005071}
+    \credit{STAT4004}
+    \dept{Statistics}
+    \submitdate{December, 2026}
+
+    \beforepreface
+
+
+\include{chapter/abstract}
+
+%\include{chapter/preface}
+
+\include{chapter/acknowledgement}
+
+\afterpreface
+
+% Chapter 1: Introduction
+\include{chapter/chap-intro}
+
+% Chapter 2: Literature Review and Theory
+\include{chapter/chap-2}
+
+% Chapter 3: Research Methodology
+\include{chapter/chap-3}
+
+% Chapter 4: Timing Synchronization Results
+\include{chapter/chap-4}
+
+% Chapter 5: BER Performance and Discussion
+\include{chapter/chap-5}
+
+% Chapter 6: Conclusion and Future Work
+\include{chapter/chap-6}
+
+% Appendices
+\include{chapter/chap-appendix}
+
+% References
+\include{chapter/bibliography}
+
+\end{document}

@@ -1,0 +1,18 @@
+% Abstract and keywords; heading structure follows the thesis template.
+\begin{center}
+{\Large\sffamily\bfseries Timing Synchronization for Orthogonal\\
+Frequency-Division Multiplexing Systems\par}
+\vspace{2mm}
+{\large Zhuoyang Zhou\par}
+\vspace{2mm}
+{\large Statistics\par}
+\vspace{2mm}
+{\Large\bfseries Abstract\par}
+\end{center}
+
+This study compares four representative preamble-based timing estimators for orthogonal frequency-division multiplexing (OFDM): Schmidl--Cox (S\&C), Park-type, Minn-type and CAZAC-based (constant-amplitude zero-autocorrelation) methods. Two MATLAB Monte Carlo experiments each evaluate 880,000 estimates in additive white Gaussian noise (AWGN) and fixed multipath at signal-to-noise ratios of 0--20~dB. With equal training duration and energy, metrics include timing mean squared error (MSE), exact and cyclic prefix (CP) safety probabilities, and bit error rate (BER).
+
+CAZAC achieves 219,997 exact estimates out of 220,000 with a known template. At 20~dB AWGN, S\&C achieves CP-safe and exact probabilities of 0.9978 and 0.0006; squared bias accounts for 97.36\% of its MSE. Park and Minn still exhibit occasional large errors. In the separate BER experiment at 20~dB AWGN, oracle phase correction using true timing error reduces S\&C bit errors from 639,428 to one out of 1,280,000 bits. Exact timing, CP-safe placement and reliable detection are thus distinct objectives.
+
+\vspace{2mm}
+\noindent\textbf{Keywords}: OFDM, timing synchronization, Monte Carlo simulation, mean squared error, cyclic prefix, bit error rate.

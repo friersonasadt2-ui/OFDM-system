@@ -1,0 +1,217 @@
+\chapter[Literature Review and Theory]
+{Literature Review and Theoretical Background}
+\label{chap:theory}
+
+\section{Fundamentals of OFDM}
+Orthogonal frequency-division multiplexing represents a wideband transmission as a collection of narrowband subcarrier signals. The subcarriers overlap in frequency but remain orthogonal over the useful symbol duration. This permits efficient use of bandwidth and, with an appropriate guard interval, simplifies equalization in frequency-selective channels \cite{vannee2000,morelli2007}.
+
+Let $N$ denote the number of subcarriers and $X[k]$ the complex modulation symbol on subcarrier $k$. Using the discrete Fourier transform (DFT) convention of MATLAB, the useful time-domain symbol is
+\begin{equation}
+ x[n]=\frac{1}{N}\sum_{k=0}^{N-1}X[k]\exp(j2\pi kn/N),\qquad 0\leq n<N.
+ \label{eq:ofdm_ifft}
+\end{equation}
+The corresponding receiver transform is
+\begin{equation}
+ X[k]=\sum_{n=0}^{N-1}x[n]\exp(-j2\pi kn/N).
+ \label{eq:ofdm_fft}
+\end{equation}
+Here $j=\sqrt{-1}$. The normalization differs from the unitary DFT convention, which uses $1/\sqrt{N}$ in both directions. The two conventions describe the same transform pair up to a known scaling factor; transmitted power and receiver scaling must be handled consistently.
+
+Orthogonality follows from the finite geometric sum
+\begin{equation}
+ \frac{1}{N}\sum_{n=0}^{N-1}\exp(j2\pi(k-m)n/N)
+ =\begin{cases}1,&k=m,\\0,&k\ne m,\end{cases}
+ \label{eq:orthogonality}
+\end{equation}
+for $k,m\in\{0,\ldots,N-1\}$. Substituting (\ref{eq:ofdm_ifft}) into (\ref{eq:ofdm_fft}) therefore recovers each transmitted symbol without contributions from the other subcarriers in an ideal channel.
+
+Quadrature phase-shift keying (QPSK) conveys two bits per complex symbol. A unit-energy constellation can be expressed as $\exp(j(\pi/4+q\pi/2))$, where $q\in\{0,1,2,3\}$. This relatively simple modulation permits the effects of synchronization to be examined without introducing higher-order modulation or channel coding. For coherent Gray-coded QPSK in AWGN with perfect synchronization, the theoretical bit error probability \cite{proakis2008} is
+\begin{equation}
+ P_b=Q\left(\sqrt{2E_b/N_0}\right)
+ =\frac{1}{2}\operatorname{erfc}\left(\sqrt{E_b/N_0}\right),
+ \label{eq:qpsk_ber}
+\end{equation}
+where $E_b$ is useful-data energy per bit and $N_0$ is the noise spectral-density parameter. This reference is used for baseline verification, rather than as a theoretical BER expression for an incorrectly synchronized multipath receiver.
+
+\section{Cyclic Prefix and Channel Modeling}
+\subsection{Cyclic prefix}
+Let $G=N_{\mathrm{CP}}$ denote the cyclic-prefix length. With the useful symbol starting at time index zero, its CP-extended representation is
+\begin{equation}
+ x_{\mathrm{cp}}[n]=x[n\bmod N],\qquad -G\leq n\leq N-1.
+ \label{eq:cp_extension}
+\end{equation}
+The prefix repeats the final $G$ samples of the useful symbol. Its purpose is not to increase information content but to provide a guard interval that permits circular convolution over the FFT observation window. The fraction of transmitted samples occupied by useful data in a CP-inclusive symbol is $N/(N+G)$, excluding other overhead such as preambles.
+
+\subsection{Discrete-time channel}
+Consider a causal, time-invariant channel over one frame, with impulse response $h[\ell]$ for $0\leq\ell\leq L_h-1$. Let $\nu=L_h-1$ be its maximum nonzero delay in samples, measured relative to the first path at delay zero. If $s[n]$ denotes the complete transmitted stream and $\tau$ its integer arrival delay, the received signal is modeled as
+\begin{equation}
+ r[n]=\sum_{\ell=0}^{\nu}h[\ell]s[n-\tau-\ell]+w[n],
+ \label{eq:channel_model}
+\end{equation}
+where $w[n]$ is zero-mean circular complex Gaussian noise with $\mathbb{E}|w[n]|^2=\sigma_w^2$. Its real and imaginary components are independent with variance $\sigma_w^2/2$. A single-path AWGN model is obtained by setting $h[0]=1$ and $\nu=0$. A multipath channel has additional delayed components and may attenuate or rotate different subcarriers differently.
+
+If $G\geq\nu$ and the FFT window starts at the true useful-symbol boundary, the samples involved in convolution all belong to the same CP-extended symbol. After CP removal, the channel acts as circular convolution. Applying the DFT gives
+\begin{equation}
+ Y[k]=H[k]X[k]+W[k],\qquad
+ H[k]=\sum_{\ell=0}^{\nu}h[\ell]\exp(-j2\pi k\ell/N).
+ \label{eq:freq_channel}
+\end{equation}
+For known nonzero $H[k]$, zero-forcing equalization divides $Y[k]$ by $H[k]$. This simplifies symbol recovery, although small channel gains amplify noise. The model assumes no carrier-frequency offset or phase noise.
+
+\section{Effects of Symbol Timing Offset}
+\subsection{Derivation of the CP-safe interval}
+Let $d_0$ denote the true received useful-symbol start and $\widehat d$ the estimated start, both measured in the same sample-index convention. Define
+\begin{equation}
+ e=\widehat d-d_0.
+ \label{eq:timing_error}
+\end{equation}
+Negative errors correspond to early FFT windows and positive errors to late windows. The receiver observes $N$ samples starting at $d_0+e$. Relative to the transmitted useful-symbol boundary, the channel input indices involved are $n+e-\ell$ for $0\leq n<N$ and $0\leq\ell\leq\nu$. Their smallest and largest possible values are $e-\nu$ and $N-1+e$, respectively.
+
+To ensure that all these indices lie within the same CP-extended symbol, it is sufficient to require
+\begin{equation}
+ e-\nu\geq-G,\qquad N-1+e\leq N-1.
+\end{equation}
+Combining the inequalities yields the operational CP-safe interval
+\begin{equation}
+ \boxed{\nu-G\leq e\leq 0.}
+ \label{eq:cp_safe}
+\end{equation}
+For example, with $G=16$, the interval is $[-16,0]$ for a single path and $[-14,0]$ for a channel with maximum delay two samples. The endpoints are inclusive for integer-sample timing. This result assumes a causal channel whose first path is the timing reference and a sufficiently long CP. It is a sufficient condition for avoiding contributions from adjacent symbols under the stated model; it is not a general guarantee of correct detection.
+
+\subsection{Phase rotation within the safe interval}
+Inside the interval in (\ref{eq:cp_safe}), the received FFT-window samples can be written as
+\begin{equation}
+ y_e[n]=\sum_{\ell=0}^{\nu}h[\ell]x[(n+e-\ell)\bmod N]+w_e[n].
+\end{equation}
+Substituting the inverse DFT expression and collecting terms gives
+\begin{equation}
+ y_e[n]=\frac{1}{N}\sum_{k=0}^{N-1}X[k]H[k]
+ \exp(j2\pi ke/N)\exp(j2\pi kn/N)+w_e[n].
+\end{equation}
+By orthogonality, its DFT is
+\begin{equation}
+ \boxed{Y_e[k]=H[k]X[k]\exp(j2\pi ke/N)+W_e[k].}
+ \label{eq:timing_phase}
+\end{equation}
+Thus a CP-safe timing error does not destroy the circular-convolution relationship, but introduces a linear phase progression across subcarrier index $k$. The sign in (\ref{eq:timing_phase}) follows directly from the definition $e=\widehat d-d_0$ and the negative-exponent receiver DFT.
+
+Equalization by the physical channel alone leaves this phase rotation in the detected signal. If $e$ were known, an ideal effective channel could instead be defined as
+\begin{equation}
+ H_{\mathrm{eff}}[k]=H[k]\exp(j2\pi ke/N).
+ \label{eq:effective_channel}
+\end{equation}
+Dividing by $H_{\mathrm{eff}}[k]$ removes the deterministic rotation. This is the basis of the oracle diagnostic used later in the study. It requires knowledge of the true error and does not represent a deployable synchronization algorithm.
+
+\subsection{Timing outside the safe interval}
+When $e<\nu-G$ or $e>0$, some samples in the FFT window may depend on an adjacent symbol or on samples outside the transmitted frame. The circular-convolution model is then generally invalid. Inter-symbol interference and inter-carrier interference may arise, and a phase-only correction cannot in general recover the missing or corrupted samples. Consequently, exact timing, CP-safe timing and BER measure different aspects of performance. The effects of timing and frequency synchronization errors on multicarrier receivers are reviewed more broadly in \cite{morelli2007}.
+
+\section{Preamble-Based Timing Synchronization}
+Preamble-based synchronization introduces a training symbol whose structure is selected to facilitate timing acquisition. An alternative is to exploit CP redundancy without additional pilots, as in the joint maximum-likelihood timing and frequency estimator of van de Beek et al. \cite{vandebeek1997}. The present study focuses on preamble-based methods instead. A receiver computes a timing metric $M(d)$ for candidate positions $d$ in a search set $\mathcal{D}$, followed by a decision rule. A common rule is
+\begin{equation}
+ \widehat d_{\mathrm{raw}}=\arg\max_{d\in\mathcal{D}}M(d),
+\end{equation}
+although a plateau-based method may use multiple adjacent metric values. The raw metric index may represent a CP boundary, an internal symmetry center or a useful-symbol start. A consistent conversion to the same physical reference is necessary before comparing timing errors.
+
+Correlation-based designs can exploit either relationships among received samples or a known local training sequence. Energy normalization reduces sensitivity to amplitude scaling, but different normalizations have different noise behavior and need not produce metrics bounded by one. Sharp peaks can reduce ambiguity, yet noise, multipath and competing correlation peaks may still cause large errors. The following sections discuss the design principles underlying the four methods selected in the proposal. Exact implementation choices are reserved for Chapter 3.
+
+\section{Schmidl--Cox Synchronization}
+Schmidl and Cox \cite{schmidl1997} use repeated time-domain training halves to obtain timing and frequency information. The original synchronization scheme uses two training symbols for timing and frequency acquisition; this study retains only the repeated-half timing stage. Let $L=N/2$. A repeated useful training symbol has the form $[A,A]$, where $A$ has $L$ samples. In a frequency-domain construction, setting the odd-indexed subcarriers to zero ensures $x[n+L]=x[n]$, because the factor $\exp(j\pi k)$ equals one for even $k$.
+
+The timing metric uses the correlation and energy terms
+\begin{align}
+ P_{\mathrm{SC}}(d)&=\sum_{m=0}^{L-1}r^*[d+m]r[d+m+L],\\
+ R_{\mathrm{SC}}(d)&=\sum_{m=0}^{L-1}|r[d+m+L]|^2,\\
+ M_{\mathrm{SC}}(d)&=\frac{|P_{\mathrm{SC}}(d)|^2}{R_{\mathrm{SC}}(d)^2},
+ \label{eq:sc_metric}
+\end{align}
+for nonzero denominator. Here $^*$ denotes complex conjugation. In a noiseless single-path channel, the CP extends the repeated structure so that both halves coincide for a range of candidate positions. Over that range $P_{\mathrm{SC}}(d)=R_{\mathrm{SC}}(d)$ and $M_{\mathrm{SC}}(d)=1$. The resulting plateau makes a unique boundary difficult to identify from the maximum alone.
+
+A threshold-based midpoint decision is one way of handling this ambiguity. If the timing reference is the right-hand endpoint of the plateau, selecting its midpoint can produce a systematic early error even when noise is weak. Consequently, a reduction in noise variance does not necessarily increase the probability of exact timing. This distinction is particularly relevant to the statistical analysis of the selected S\&C implementation. The one-sided energy normalization in (\ref{eq:sc_metric}) also means that metric values above one can occur in noise or near signal boundaries.
+
+\section{Park Timing Synchronization}
+Park et al. \cite{park2003} proposed a training design intended to reduce the ambiguity of the S\&C plateau. Instead of relying solely on repetition, the design exploits conjugate symmetry in the training samples. Their study evaluates timing accuracy through the mean and MSE of the estimator.
+
+The symmetry principle can be illustrated using a sequence whose samples on opposite sides of a central boundary are complex conjugates. If $c$ denotes that boundary and $a_m=r[c-m]$, $b_m=r[c+m-1]$, ideal conjugate symmetry implies $b_m=a_m^*$. Then
+\begin{equation}
+ \sum_{m=1}^{L}a_m b_m=\sum_{m=1}^{L}|a_m|^2.
+\end{equation}
+At the correct symmetry center, the products therefore add coherently without conjugating one of the received factors again. Away from the center this relationship is generally weaker. A peak-based metric can exploit the resulting contrast between aligned and misaligned positions.
+
+This illustration explains the symmetry mechanism rather than asserting the exact normalization or indexing of the published Park estimator. The present study uses a supervisor-confirmed Park-type variant. Its training generation, normalization, energy gate and conversion from symmetry center to useful-symbol start are specified separately in Chapter 3. The performance of that variant cannot automatically be attributed to every published Park implementation.
+
+\section{Minn Timing Synchronization}
+Minn, Bhargava and Letaief \cite{minn2003} investigated training-symbol design for improved timing and frequency acquisition. An important motivation is to achieve a steep timing-metric roll-off near the desired boundary rather than a broad region of nearly equal metric values.
+
+The role of signed repetitions can be illustrated by dividing a useful training symbol into $J$ blocks, each of length $B=N/J$. Let the $i$th block be $s_i A$, with $s_i\in\{-1,1\}$ and common sequence $A$. For adjacent blocks define
+\begin{equation}
+ C_i(d)=\sum_{m=0}^{B-1}r^*[d+iB+m]r[d+(i+1)B+m],
+\end{equation}
+where $i=0,\ldots,J-2$. In an aligned noiseless observation, $C_i(d)=s_i s_{i+1}\sum_m|A[m]|^2$. A sign-weighted sum
+\begin{equation}
+ P_{\mathrm{sign}}(d)=\sum_{i=0}^{J-2}s_i s_{i+1}C_i(d)
+\end{equation}
+therefore combines the intended adjacent correlations constructively. Misalignment changes the block relationships and can reduce the metric. This generic argument motivates the sign-weighted correlations used by the selected Minn-type implementation; it is not a claim that all Minn designs share a single formula.
+
+A steep local peak is desirable, but it does not rule out secondary peaks elsewhere in the search interval. The structure of the sequence, channel response and decision rule all affect the probability that a secondary peak is selected. The time-domain design used in this project draws on Golay complementary sequences \cite{golay1961} and is specified in Chapter 3.
+
+\section{CAZAC-Based Synchronization}
+Constant-amplitude zero-autocorrelation (CAZAC) sequences provide a different basis for timing acquisition. The defining zero-autocorrelation property refers to periodic correlation at nonzero cyclic shifts \cite{chu1972}. An even-length Zadoff--Chu sequence of length $N$ with root $u$ relatively prime to $N$ can be written as
+\begin{equation}
+ z[n]=\exp(-j\pi u n^2/N),\qquad 0\leq n<N.
+ \label{eq:zc_sequence}
+\end{equation}
+Each element has unit magnitude. Its periodic autocorrelation is
+\begin{align}
+ C_z[q]&=\sum_{n=0}^{N-1}z^*[n]z[(n+q)\bmod N]\\
+ &=\exp(-j\pi u q^2/N)\sum_{n=0}^{N-1}\exp(-j2\pi uqn/N).
+\end{align}
+Because $u$ and $N$ are relatively prime, the geometric sum is zero for $q\not\equiv0\pmod N$, and $C_z[0]=N$. This property provides strong discrimination between different cyclic alignments of the ideal sequence. Fang et al. \cite{fang2012} proposed a CAZAC-based timing and frequency synchronization scheme using weighted repeated training blocks. The known-template approach examined here is distinct from that scheme.
+
+When a local training template $t[m]$ of length $T$ is known, a normalized matched-correlation metric can be defined by
+\begin{equation}
+ M_{\mathrm{MC}}(d)=\frac{\left|\sum_{m=0}^{T-1}t^*[m]r[d+m]\right|^2}
+ {\left(\sum_{m=0}^{T-1}|t[m]|^2\right)\left(\sum_{m=0}^{T-1}|r[d+m]|^2\right)}.
+ \label{eq:matched_metric}
+\end{equation}
+For nonzero energies, the Cauchy--Schwarz inequality gives $0\leq M_{\mathrm{MC}}(d)\leq1$. Equality at one occurs when the observed window is a nonzero scalar multiple of the template. Under finite-window observation, CP extension and multipath, the ideal periodic autocorrelation result does not imply that all off-peak metric values vanish.
+
+The selected CAZAC-based method uses a complete known CP-inclusive template. Unlike structure-only correlation, it therefore exploits knowledge of the actual transmitted training samples. This distinction must be considered when interpreting a comparison performed with equal training duration and energy. The study does not claim to reproduce the specific weighting scheme of the cited CAZAC synchronization paper.
+
+\section{Statistical Evaluation of Timing Estimators}
+\subsection{Bias, variance and mean squared error}
+Treat the timing estimate as a random variable induced by the random transmission and noise conditions. For error $e$ defined in (\ref{eq:timing_error}), the mean squared error is
+\begin{equation}
+ \mathrm{MSE}=\mathbb{E}[e^2]=\operatorname{Var}(e)+\bigl(\mathbb{E}[e]\bigr)^2.
+ \label{eq:mse_decomposition}
+\end{equation}
+The mean error represents signed bias relative to the chosen timing reference. Variance describes random spread about that mean. A method can have small variance but considerable MSE if it consistently selects a displaced boundary. Conversely, rare large errors can contribute disproportionately to MSE because errors are squared.
+
+For $K$ valid trial errors $e_i$, empirical estimators are
+\begin{align}
+ \overline e&=\frac{1}{K}\sum_{i=1}^{K}e_i,\\
+ \widehat{\mathrm{MSE}}&=\frac{1}{K}\sum_{i=1}^{K}e_i^2,\\
+ v_K&=\frac{1}{K}\sum_{i=1}^{K}(e_i-\overline e)^2.
+\end{align}
+These satisfy $\widehat{\mathrm{MSE}}=v_K+\overline e^2$ exactly. If the sample variance with denominator $K-1$ is used instead, it must be multiplied by $(K-1)/K$ in this identity. Invalid estimates require separate reporting; excluding them from MSE changes its interpretation to a conditional statistic.
+
+\subsection{Correct timing probabilities}
+Let $I_i$ indicate a valid estimate among
+$K_{\mathrm{all}}$ trials. The exact-timing event
+is $e=0$, and the CP-safe event is
+$\nu-G\leq e\leq0$. Define:
+\begin{align}
+ \widehat p_{\mathrm{exact}}&=\frac{1}{K_{\mathrm{all}}}\sum_i I_i\mathbf{1}\{e_i=0\},\\
+ \widehat p_{\mathrm{safe}}&=\frac{1}{K_{\mathrm{all}}}\sum_i I_i\mathbf{1}\{\nu-G\leq e_i\leq0\},\\
+ \widehat p_{\mathrm{fail}}&=1-\frac{1}{K_{\mathrm{all}}}\sum_i I_i.
+\end{align}
+An invalid trial contributes zero to both success counts. When $G\geq\nu$, exact timing is a subset of CP-safe timing. The acceptance interval changes with channel delay spread, so CP-safe probabilities across different channels represent different operational events.
+
+For independent trials with common success probability $p$, the count of successes follows a binomial distribution, and the sample proportion has variance $p(1-p)/K_{\mathrm{all}}$. The observed absence of errors in a finite experiment is not proof that the true error probability is zero. A histogram or empirical distribution of valid timing errors complements these probabilities by revealing systematic displacement, multiple modes and rare outliers.
+
+\subsection{System-level performance}
+Bit error rate is estimated as the number of incorrectly detected bits divided by the number of decoded bits. When decoding failures occur, conditional BER and the proportion of lost bits should be reported separately. Unlike timing MSE, BER depends on modulation, channel equalization and the particular effect of a timing error on the FFT window. The phase relation in (\ref{eq:timing_phase}) explains why a high CP-safe probability need not guarantee a low BER without phase compensation.
+
+\section{Literature Summary and Research Motivation}
+The reviewed methods illustrate different approaches to reducing timing ambiguity: repeated-half correlation, conjugate symmetry, signed-block correlation and known-template matching. Their design principles suggest that metric shape, the availability of training information and the final decision rule are all relevant to the performance of a timing estimator.
+
+The literature motivates a controlled comparison in which the training duration, energy, timing reference, channel assumptions and candidate search interval are standardized. Equal overhead does not imply identical receiver-side information, and the results must be interpreted in light of the selected implementations. The present investigation is not intended to reproduce all published results or establish a universally optimal method. Instead, it evaluates the statistical properties of representative implementations and examines their consequences for data recovery under the defined simulation conditions. The next chapter specifies the actual MATLAB framework and experimental procedures used to address these questions.
